@@ -1,6 +1,7 @@
-// backend/routes/api.js
 const express = require('express');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Patient = require('../models/patient');
+const MedicalRecord = require('../models/medicalRecord');
 
 const router = express.Router();
 
@@ -8,60 +9,101 @@ const router = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- MOCK PATIENT DATA ---
-const mockPatientData = {
-  abhaId: "12-3456-7890-1234",
-  personalInfo: { name: "Dhruv Gupta", age: 45, gender: "Male", bloodType: "O+", emergencyContact: "Anjali Gupta (Wife) - +91 98765 43210" },
-  criticalInfo: { allergies: ["Penicillin", "Peanuts"], chronicConditions: ["Hypertension", "Type 2 Diabetes"], currentMedications: [{ name: "Metformin", dosage: "500mg daily" }, { name: "Lisinopril", dosage: "10mg daily" }] },
-  medicalHistory: [
-    { recordId: "REC789012", date: "2024-05-15", type: "Discharge Summary", hospital: "Apollo Hospital, Delhi", doctor: "Dr. Mehta", details: "Patient admitted for chest pain. Diagnosed with stable angina. Prescribed medication and advised lifestyle changes. Discharged in stable condition." },
-    { recordId: "REC456789", date: "2024-02-20", type: "Lab Report", hospital: "Max Healthcare, Saket", doctor: "Lab Services", details: "Fasting Blood Sugar: 140 mg/dL (High). HbA1c: 7.2% (High). Cholesterol levels within normal range." },
-    { recordId: "REC123456", date: "2023-11-10", type: "Prescription", hospital: "AIIMS, New Delhi", doctor: "Dr. Sharma", details: "Patient reported consistent high blood pressure readings. Prescribed Lisinopril 10mg. Follow-up in 3 months." },
-  ]
-};
+// --- MOCK DATA AND SEEDER HAVE BEEN MOVED TO /routes/seedDB.js ---
+// This file is now clean and only handles live API requests.
 
 
-// --- DATA & AI ROUTES ---
+// --- DATABASE-CONNECTED ROUTES ---
 
-// Fetch Patient Records
-router.post('/fetch-records', (req, res) => {
-  const { abhaId } = req.body;
-  if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
-  setTimeout(() => res.status(200).json(mockPatientData), 1500);
+// This route fetches all data for a patient directly from MongoDB
+router.post('/fetch-records', async (req, res) => {
+  try {
+    const { abhaId } = req.body;
+    if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
+
+    // Step 1: Find the patient in the database
+    const patient = await Patient.findOne({ abhaId: abhaId });
+    if (!patient) return res.status(404).json({ error: 'Patient with that ABHA ID not found.' });
+
+    // Step 2: Find all medical records for that patient
+    const medicalHistory = await MedicalRecord.find({ patient: abhaId }).sort({ date: -1 });
+
+    // Step 3: Combine the data into the format the frontend expects
+    const patientData = {
+      abhaId: patient.abhaId,
+      personalInfo: { name: patient.name, age: patient.age, gender: patient.gender, bloodType: patient.bloodType, emergencyContact: patient.emergencyContact },
+      criticalInfo: { allergies: patient.allergies, chronicConditions: patient.chronicConditions, currentMedications: patient.currentMedications },
+      medicalHistory: medicalHistory
+    };
+    res.status(200).json(patientData);
+  } catch (error) {
+    console.error("Error in /fetch-records:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
 });
 
-// AI Summarization
+// This route looks up a patient's name from the database
+router.post('/patient-lookup', async (req, res) => {
+  try {
+    const { abhaId } = req.body;
+    if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
+
+    const patient = await Patient.findOne({ abhaId: abhaId });
+
+    if (patient) {
+      res.status(200).json({ name: patient.name });
+    } else {
+      res.status(404).json({ error: 'Patient with that ABHA ID not found.' });
+    }
+  } catch (error) {
+    console.error("Error in /patient-lookup:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+// --- AI Routes (These will now receive live data from the above routes) ---
+
 router.post('/summarize', async (req, res) => {
   const { medicalRecords } = req.body;
   if (!medicalRecords || medicalRecords.length === 0) return res.status(400).json({ error: 'Medical records are required.' });
-  
-  const recordsText = medicalRecords.map(r => `Date: ${r.date}\nType: ${r.type}\nDetails: ${r.details}`).join('\n\n---\n\n');
-  const prompt = `Summarize these medical records for a busy doctor. Structure the output with sections for "Critical Alerts", "Key Medical History" (bulleted), and "Current Medications". Records:\n---\n${recordsText}\n---`;
-
+  const recordsText = medicalRecords.map(r => `Date: ${r.date}, Type: ${r.recordType}, Details: ${r.details}`).join('\n---\n');
+  const prompt = `Summarize these medical records for a busy doctor:\n${recordsText}`;
   try {
     const result = await model.generateContent(prompt);
     res.status(200).json({ summary: result.response.text() });
   } catch (error) {
     console.error("Error generating summary:", error);
-    res.status(500).json({ error: 'Failed to generate AI summary.' });
+    res.status(500).json({ error: 'Failed to generate summary.' });
   }
 });
 
-// AI Chat
 router.post('/chat', async (req, res) => {
-    const { medicalRecords, question } = req.body;
-    if (!medicalRecords || !question) return res.status(400).json({ error: 'Medical history and a question are required.' });
+  const { medicalRecords, question } = req.body;
+  if (!medicalRecords || !question) return res.status(400).json({ error: 'Records and question are required.' });
+  const recordsText = medicalRecords.map(r => `On ${r.date}, a ${r.recordType} stated: "${r.details}"`).join('\n');
+  const prompt = `Answer the question based only on these records. If the answer isn't present, say so. Records:\n${recordsText}\n\nQuestion: "${question}"`;
+  try {
+    const result = await model.generateContent(prompt);
+    res.status(200).json({ answer: result.response.text() });
+  } catch (error) {
+    console.error("Error in AI chat:", error);
+    res.status(500).json({ error: 'Failed to get answer.' });
+  }
+});
 
-    const recordsText = medicalRecords.map(r => `On ${r.date}, a ${r.type} stated: "${r.details}"`).join('\n');
-    const prompt = `Answer the doctor's question based *only* on the provided records. If the answer isn't in the records, say so. Records:\n---BEGIN RECORDS---\n${recordsText}\n---END RECORDS---\n\nDoctor's Question: "${question}"\n\nAnswer:`;
-
-    try {
-        const result = await model.generateContent(prompt);
-        res.status(200).json({ answer: result.response.text() });
-    } catch (error) {
-        console.error("Error in AI chat:", error);
-        res.status(500).json({ error: 'Failed to get answer from AI.' });
-    }
+router.post('/blueprint', async (req, res) => {
+  const { medicalRecords } = req.body;
+  if (!medicalRecords || medicalRecords.length === 0) return res.status(400).json({ error: 'Medical records are required.' });
+  const recordsText = medicalRecords.map(r => `On ${r.date}, a ${r.recordType} from ${r.hospitalName} stated: "${r.details}"`).join('\n');
+  const prompt = `Analyze the following records. Respond with three headings: "Key Points", "Potential Risks", and "Suggested Questions".\n\nRecords:\n${recordsText}`;
+  try {
+    const result = await model.generateContent(prompt);
+    res.status(200).json({ blueprint: result.response.text() });
+  } catch (error) {
+    console.error("Error generating blueprint:", error);
+    res.status(500).json({ error: 'Failed to generate blueprint.' });
+  }
 });
 
 module.exports = router;

@@ -4,16 +4,23 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: [true, 'Please provide a username'],
+    required: [true, 'Username is required'],
     unique: true,
+    trim: true,
+    lowercase: true
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: [true, 'Password is required']
   },
-  role: { // e.g., 'doctor', 'staff'
-    type: String,
-    default: 'doctor',
+  hospital: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Hospital', // This creates a link to the Hospital model
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 

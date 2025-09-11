@@ -1,40 +1,57 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose'); // Import Mongoose
-require('dotenv').config(); // Load environment variables
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-// Import both of our route files
-const apiRoutes = require('./routes/api');
-const authRoutes = require('./routes/auth'); // <-- Import auth routes
+// --- Import Models & The New Seeder Function ---
+const Patient = require('./models/patient'); // Needed to check if the DB is empty
+const runSeeder = require('./routes/seedDB'); // <-- Import the seeder FUNCTION
 
-// --- Initial Setup ---
 const app = express();
-const port = process.env.PORT || 8000;
+app.use(cors());
+app.use(express.json());
 
-// --- Middleware ---
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(express.json()); // Enable parsing of JSON request bodies
+// Simple Request Logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] Incoming Request: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
-// --- Database Connection ---
+// --- Database Connection & AUTOMATED Seeding Logic ---
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected successfully.'))
+  .then(async () => {
+    console.log('MongoDB connected successfully.');
+    
+    // Check if the database has any patients in it
+    const patientCount = await Patient.countDocuments();
+    if (patientCount === 0) {
+      console.log('Database is empty. Running the seeder...');
+      await runSeeder(); // Run the seeder function
+    } else {
+      console.log('Database already contains data. Seeding process skipped.');
+    }
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// --- API Routes ---
-// Authentication routes will be prefixed with /api/auth
-app.use('/api/auth', authRoutes); // <-- Use auth routes
-// All other API routes will be prefixed with /api
-app.use('/api', apiRoutes);
+// --- Import and Use Route Files ---
+// Note that we no longer need to import or use a separate seeder route
+const apiRoutes = require('./routes/api');
+const authRoutes = require('./routes/auth');
+const translatorRoutes = require('./routes/translator');
+const prescriptionRoutes = require('./routes/prescription');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/translate', translatorRoutes);
+app.use('/api/prescription', prescriptionRoutes);
+app.use('/api', apiRoutes); // This handles all routes from api.js
 
 // --- Health Check Endpoint ---
-// A simple route to check if the server is running
 app.get('/', (req, res) => {
   res.status(200).send('AarogyaAI Backend is running!');
 });
 
-// --- Start Server ---
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
