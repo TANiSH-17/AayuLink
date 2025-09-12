@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AarogyaLoader from './components/AarogyaLoader';
 import LandingPage from './components/LandingPage';
-import PatientLookupPage from './components/PatientLookupPage'; // Using the new lookup page
+import PatientLookupPage from './components/PatientLookupPage';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import ValidatorPage from './components/ValidatorPage';
+import OtpVerificationModal from './components/OtpVerificationModal'; // Import the OTP modal
 
 const API_URL = 'http://localhost:8000';
 
@@ -15,51 +16,71 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [showValidator, setShowValidator] = useState(false);
 
-  // This state now controls which patient and view the dashboard loads
+  // This state controls which patient and view the dashboard loads
   const [dashboardConfig, setDashboardConfig] = useState({
     abhaId: null,
     initialView: 'history'
   });
 
+  // --- NEW STATE to manage the OTP consent pop-up ---
+  const [consentState, setConsentState] = useState({
+    awaitingOtp: false, // Is the OTP modal open?
+    patientToVerify: null, // Holds { abhaId, name } of the patient needing consent
+    otpError: ''
+  });
+
   useEffect(() => {
-    const timer = setTimeout(() => setShowLoader(false), 2000); // Shorter loading time
+    const timer = setTimeout(() => setShowLoader(false), 1500); // Shorter load time
     return () => clearTimeout(timer);
   }, []);
 
   const handleLogin = async (username, password, role) => {
+    // This function handles the initial login for an admin or individual
     setAuthError('');
     try {
-      // In a real app, this would be a real API call
-      await new Promise(resolve => setTimeout(resolve, 500)); 
-      
+      await axios.post(`${API_URL}/api/auth/login`, { username, password });
       setUserRole(role);
       setIsAuthenticated(true);
-      
-      // If the user is an admin, load a default patient's dashboard immediately
-      if (role === 'admin') {
-        setDashboardConfig({ abhaId: '12-3456-7890-0001', initialView: 'history' });
-      }
     } catch (err) {
-      setAuthError('Simulated login failed. Please check credentials.');
+      setAuthError(err.response?.data?.message || 'Login failed.');
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setAuthError('');
-    // Reset the dashboard configuration on logout
     setDashboardConfig({ abhaId: null, initialView: 'history' });
   };
   
-  // This function is called from PatientLookupPage after a user finds a patient and chooses an action
-  const handlePatientSelect = (abhaId, view) => {
-    setDashboardConfig({ abhaId, initialView: view });
+  // --- UPDATED: This function is now the central point for access control ---
+  const handlePatientSelect = (abhaId, view, patientName) => {
+    if (view === 'emergency') {
+      // If "Emergency Mode" is clicked, bypass OTP and go straight to the dashboard
+      console.log("Emergency access granted. Bypassing OTP.");
+      setDashboardConfig({ abhaId, initialView: 'emergency' });
+    } else {
+      // For "Complete History", trigger the OTP consent flow for ALL users
+      console.log(`Detailed history access requested for ${patientName}. Triggering OTP.`);
+      setConsentState({ awaitingOtp: true, patientToVerify: { abhaId, name: patientName }, otpError: '' });
+    }
   };
   
-  const handleSignUp = async (username, password, role) => { 
-    alert('Signup functionality is for demonstration purposes.');
+  // --- NEW: This function handles the OTP verification ---
+  const handleOtpVerify = (otp) => {
+    console.log(`Verifying OTP: ${otp}`);
+    // The OTP is hardcoded here as requested
+    if (otp === "081106") {
+      // If correct, load the dashboard with the patient's data
+      setDashboardConfig({ abhaId: consentState.patientToVerify.abhaId, initialView: 'history' });
+      // Close and reset the modal state
+      setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' });
+    } else {
+      // If incorrect, show an error message inside the modal
+      setConsentState(prev => ({ ...prev, otpError: 'Invalid OTP. Please try again.' }));
+    }
   };
 
+  const handleSignUp = async () => { /* ... */ };
   const toggleValidator = () => setShowValidator(prev => !prev);
 
 
@@ -69,27 +90,36 @@ export default function App() {
     if (showValidator) return <ValidatorPage onBack={toggleValidator} />;
     
     if (isAuthenticated) {
-      // If a patient has been selected (either by an admin logging in or an individual looking one up)
+      // If a patient's ABHA ID is set in the config, show the dashboard
       if (dashboardConfig.abhaId) {
         return <DashboardLayout 
-                  key={dashboardConfig.abhaId} // The key prop is crucial to force a re-render when the patient changes
+                  key={dashboardConfig.abhaId} // This key is crucial to force a re-render
                   onLogout={handleLogout} 
                   initialAbhaId={dashboardConfig.abhaId}
                   initialView={dashboardConfig.initialView}
                 />;
       } else {
-        // If logged in as an individual but no patient has been selected yet
-        return <PatientLookupPage onPatientSelect={handlePatientSelect} />;
+        // If logged in but no patient is selected yet, show the lookup page
+        return (
+          <>
+            <PatientLookupPage onPatientSelect={handlePatientSelect} />
+            
+            {/* This line conditionally renders the OTP modal from your Canvas when needed */}
+            {consentState.awaitingOtp && (
+              <OtpVerificationModal 
+                patientName={consentState.patientToVerify.name}
+                onVerify={handleOtpVerify}
+                onClose={() => setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' })}
+                error={consentState.otpError}
+              />
+            )}
+          </>
+        );
       }
     }
     
-    // If not authenticated, show the main landing page
-    return <LandingPage 
-              onLogin={handleLogin} 
-              onSignUp={handleSignUp} 
-              onValidatorClick={toggleValidator} 
-              authError={authError} 
-            />;
+    // By default, show the main landing page
+    return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onValidatorClick={toggleValidator} authError={authError} />;
   };
 
   return <div>{renderContent()}</div>;
