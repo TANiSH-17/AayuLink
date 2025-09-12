@@ -1,121 +1,109 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { ScanSearch, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { X, Search, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000';
 
-export default function ValidatorPage({ onExit }) {
-    const [token, setToken] = useState('');
-    const [prescription, setPrescription] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [fulfilledMessage, setFulfilledMessage] = useState('');
+export default function ValidatorPage({ onBack }) { // <-- It now accepts the onBack prop
+  const [token, setToken] = useState('');
+  const [prescription, setPrescription] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isFulfilled, setIsFulfilled] = useState(false);
 
-    const handleVerify = async (e) => {
-        e.preventDefault();
-        if (!token.trim()) return;
-        setIsLoading(true);
-        setError('');
-        setPrescription(null);
-        setFulfilledMessage('');
-        try {
-            const response = await axios.post(`${API_URL}/api/prescriptions/verify`, { token });
-            setPrescription(response.data);
-        } catch (err) {
-            setError(err.response?.data?.message || "Verification failed. The code may be invalid or expired.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (!token.trim()) return;
+    setIsLoading(true);
+    setError('');
+    setPrescription(null);
+    setIsFulfilled(false);
+    try {
+      const response = await axios.get(`${API_URL}/api/prescription/verify/${token}`);
+      setPrescription(response.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Verification failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleFulfill = async () => {
-        setIsLoading(true);
-        setError('');
-        try {
-            const response = await axios.post(`${API_URL}/api/prescriptions/fulfill`, { token });
-            setFulfilledMessage(response.data.message);
-            setPrescription(response.data.prescription); // Update prescription with new 'Fulfilled' status
-        } catch (err) {
-            setError(err.response?.data?.message || "Failed to fulfill the prescription.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleFulfill = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      await axios.post(`${API_URL}/api/prescription/fulfill/${token}`);
+      setIsFulfilled(true);
+      // Update the local state to show the new status
+      setPrescription(prev => ({ ...prev, status: 'Fulfilled' }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not fulfill prescription.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return (
-        <div className="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 relative">
-                <button onClick={onExit} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-800">Aarogya Express Validator</h1>
-                    <p className="text-gray-600 mt-2">Verify and fulfill digital e-prescriptions securely.</p>
-                </div>
-                
-                <form onSubmit={handleVerify} className="flex items-center space-x-4">
-                    <input 
-                        type="text"
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        placeholder="Enter prescription token or scan QR code..."
-                        className="flex-1 p-3 border rounded-lg text-lg focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
-                    <button type="submit" disabled={isLoading} className="bg-blue-600 text-white p-3 rounded-lg font-bold flex items-center disabled:bg-blue-300">
-                        <ScanSearch className="h-6 w-6 mr-2"/> Verify
-                    </button>
-                </form>
+  return (
+    <div className="fixed inset-0 bg-slate-100 z-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-8 relative">
+        {/* --- THIS IS THE FIX --- */}
+        {/* The button now calls the onBack function when clicked */}
+        <button onClick={onBack} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <X className="h-6 w-6" />
+        </button>
 
-                <div className="mt-8 min-h-[250px] flex flex-col justify-center">
-                    {isLoading && <p className="text-center font-semibold text-gray-600">Awaiting verification...</p>}
-                    {error && <StatusCard type="error" message={error} />}
-                    {fulfilledMessage && <StatusCard type="success" message={fulfilledMessage} />}
-                    
-                    {prescription && !fulfilledMessage && (
-                        <PrescriptionDetails prescription={prescription} onFulfill={handleFulfill} isLoading={isLoading}/>
-                    )}
-                </div>
+        <h1 className="text-3xl font-bold text-center">Aarogya Express Validator</h1>
+        <p className="text-center text-gray-500 mt-1">Verify and fulfill digital e-prescriptions securely.</p>
+        
+        <form onSubmit={handleVerify} className="mt-8 flex items-center gap-2">
+          <input
+            type="text"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Enter prescription token or scan QR code..."
+            className="flex-1 p-3 border-2 rounded-lg focus:ring-2 focus:ring-green-500"
+          />
+          <button type="submit" disabled={isLoading} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-green-300">
+            <Search className="h-5 w-5" />
+          </button>
+        </form>
+
+        {error && <p className="text-center text-red-500 mt-4">{error}</p>}
+
+        {prescription && (
+          <div className="mt-6 border-t pt-6">
+            <h2 className="text-xl font-semibold">Prescription Details</h2>
+            <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-3">
+              <p><strong>Patient:</strong> {prescription.patientName}</p>
+              <p><strong>Doctor:</strong> {prescription.doctorName}</p>
+              <p><strong>Status:</strong> <span className={`font-bold ${prescription.status === 'Fulfilled' ? 'text-red-600' : 'text-green-600'}`}>{prescription.status}</span></p>
+              <div>
+                <strong>Medications:</strong>
+                <ul className="list-disc list-inside ml-4">
+                  {prescription.medications.map((med, i) => <li key={i}>{med.name} ({med.dosage})</li>)}
+                </ul>
+              </div>
             </div>
-        </div>
-    );
-}
-
-// Helper component for displaying status messages (Success/Error)
-function StatusCard({ type, message }) {
-    const isError = type === 'error';
-    const Icon = isError ? XCircle : (type === 'success' ? CheckCircle : AlertTriangle);
-    const colors = isError ? 'bg-red-100 border-red-500 text-red-800' : 'bg-green-100 border-green-500 text-green-800';
-    return (
-        <div className={`p-4 border-l-4 rounded-r-lg ${colors} flex items-center animate-fade-in`}>
-            <Icon className="h-6 w-6 mr-3"/>
-            <p className="font-semibold">{message}</p>
-        </div>
-    );
-}
-
-// Helper component to display the verified prescription details
-function PrescriptionDetails({ prescription, onFulfill, isLoading }) {
-    return (
-        <div className="border-2 p-6 rounded-lg animate-fade-in">
-            <h2 className="text-2xl font-bold mb-4">Prescription Details</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><strong className="block text-gray-500">Patient:</strong> {prescription.patientName}</div>
-                <div><strong className="block text-gray-500">Doctor:</strong> {prescription.doctorName}</div>
-                <div><strong className="block text-gray-500">Date Issued:</strong> {new Date(prescription.createdAt).toLocaleDateString()}</div>
-                <div><strong className="block text-gray-500">Status:</strong> 
-                    <span className={`font-bold ${prescription.status === 'Fulfilled' ? 'text-green-600' : 'text-yellow-600'}`}>{prescription.status}</span>
-                </div>
-            </div>
-            <h3 className="font-semibold mb-2">Medications:</h3>
-            <ul className="list-disc list-inside bg-gray-50 p-4 rounded-md">
-                {prescription.medications.map((med, i) => <li key={i}>{med.name} ({med.dosage}) - {med.duration}</li>)}
-            </ul>
-            
-            {prescription.status === 'Pending' && (
-                <button onClick={onFulfill} disabled={isLoading} className="w-full mt-6 bg-green-600 text-white font-bold py-3 rounded-lg text-lg hover:bg-green-700 disabled:bg-green-300">
-                    Mark as Fulfilled
-                </button>
+            {prescription.status === 'Pending' && !isFulfilled && (
+              <button onClick={handleFulfill} disabled={isLoading} className="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 disabled:bg-blue-300">
+                Mark as Fulfilled
+              </button>
             )}
+            {isFulfilled && (
+              <div className="mt-4 p-3 bg-green-100 text-green-800 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 mr-2" /> Prescription Fulfilled Successfully!
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="text-center mt-8">
+            <button onClick={onBack} className="text-sm text-gray-500 hover:underline flex items-center mx-auto">
+                <ArrowLeft className="h-4 w-4 mr-1"/> Back to Home
+            </button>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
 

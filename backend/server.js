@@ -3,9 +3,12 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// --- Import Models & The New Seeder Function ---
-const Patient = require('./models/patient'); // Needed to check if the DB is empty
-const runSeeder = require('./routes/seedDB'); // <-- Import the seeder FUNCTION
+// --- Import ALL Route Files ---
+const apiRoutes = require('./routes/api');
+const authRoutes = require('./routes/auth');
+const translatorRoutes = require('./routes/translator');
+const prescriptionRoutes = require('./routes/prescription');
+const otpRoutes = require('./routes/otp');
 
 const app = express();
 app.use(cors());
@@ -17,33 +20,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Database Connection & AUTOMATED Seeding Logic ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(async () => {
-    console.log('MongoDB connected successfully.');
-    
-    // Check if the database has any patients in it
-    const patientCount = await Patient.countDocuments();
-    if (patientCount === 0) {
-      console.log('Database is empty. Running the seeder...');
-      await runSeeder(); // Run the seeder function
-    } else {
-      console.log('Database already contains data. Seeding process skipped.');
-    }
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// --- Import and Use Route Files ---
-// Note that we no longer need to import or use a separate seeder route
-const apiRoutes = require('./routes/api');
-const authRoutes = require('./routes/auth');
-const translatorRoutes = require('./routes/translator');
-const prescriptionRoutes = require('./routes/prescription');
-
+// --- Tell Express to Use the Routes ---
+// The order is important. More specific routes must come before general ones.
 app.use('/api/auth', authRoutes);
 app.use('/api/translate', translatorRoutes);
 app.use('/api/prescription', prescriptionRoutes);
-app.use('/api', apiRoutes); // This handles all routes from api.js
+app.use('/api/otp', otpRoutes);
+app.use('/api', apiRoutes);
 
 // --- Health Check Endpoint ---
 app.get('/', (req, res) => {
@@ -51,7 +34,23 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+
+// --- Database Connection & Server Start ---
+// This is the definitive fix. We connect to the database FIRST.
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('MongoDB connected successfully.');
+    
+    // --- THEN, we start the server ---
+    // This guarantees the server will not accept requests until the database is ready.
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log('NOTE: To reset the database, run "npm run seed" in a separate terminal.');
+    });
+  })
+  .catch(err => {
+    console.error('---!! DATABASE CONNECTION FAILED !!---');
+    console.error(err);
+    process.exit(1); // Exit the process with an error code
+  });
 

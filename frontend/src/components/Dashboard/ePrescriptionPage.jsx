@@ -6,39 +6,45 @@ import { Plus, X, Copy, CheckCircle } from 'lucide-react';
 const API_URL = 'http://localhost:8000';
 
 // --- Main ePrescription Page Component ---
-export default function EPrescriptionPage({ patientData }) {
+// This page is for creating and viewing the history of e-prescriptions.
+export default function EPrescriptionPage({ patientData, onPrescriptionSuccess }) {
   const [prescriptions, setPrescriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showIssuedModal, setShowIssuedModal] = useState(false);
   const [issuedPrescription, setIssuedPrescription] = useState(null);
 
-  useEffect(() => {
-    const fetchPrescriptions = async () => {
-      if (!patientData) return;
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`${API_URL}/api/prescription/patient/${patientData.abhaId}`);
-        setPrescriptions(response.data);
-      } catch (error) {
-        console.error("Failed to fetch prescriptions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchPrescriptions();
-  }, [patientData]);
-
-  const handleIssueSuccess = (newPrescription) => {
-    setIssuedPrescription(newPrescription);
-    setPrescriptions(prev => [newPrescription, ...prev]);
-    setShowCreateModal(false);
-    setShowIssuedModal(true);
+  // This function fetches the list of past prescriptions for the current patient.
+  const fetchPrescriptionHistory = async () => {
+    if (!patientData) return;
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/prescription/patient/${patientData.abhaId}`);
+      setPrescriptions(response.data);
+    } catch (error) {
+      console.error("Failed to fetch prescriptions:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (!patientData) {
-      return <div className="text-center p-8">Please select a patient to manage e-prescriptions.</div>
-  }
+  useEffect(() => {
+    fetchPrescriptionHistory();
+  }, [patientData]);
+
+  // This function is called after a new prescription is successfully created.
+  const handleIssueSuccess = (newPrescription) => {
+    setIssuedPrescription(newPrescription);
+    setShowCreateModal(false);
+    setShowIssuedModal(true);
+    
+    // Trigger the data refresh in the main DashboardLayout to update the patient's history.
+    if (onPrescriptionSuccess) {
+      onPrescriptionSuccess();
+    }
+    // Also, refresh the local list on this page for an instant UI update.
+    fetchPrescriptionHistory(); 
+  };
 
   return (
     <div className="space-y-8">
@@ -55,10 +61,12 @@ export default function EPrescriptionPage({ patientData }) {
           Create New
         </button>
       </div>
+
+      {/* List of Past Prescriptions */}
       <div className="bg-white p-6 rounded-lg border">
         <h2 className="text-xl font-semibold mb-4">Prescription History</h2>
         {isLoading ? (
-          <p>Loading history...</p>
+          <p>Loading prescription history...</p>
         ) : prescriptions.length > 0 ? (
           <div className="space-y-4">
             {prescriptions.map(p => (
@@ -79,6 +87,8 @@ export default function EPrescriptionPage({ patientData }) {
           <p className="text-gray-500">No prescription history found for this patient.</p>
         )}
       </div>
+
+      {/* Modals for creating and viewing the issued prescription */}
       {showCreateModal && <CreatePrescriptionModal patientData={patientData} onClose={() => setShowCreateModal(false)} onSuccess={handleIssueSuccess} />}
       {showIssuedModal && <IssuedPrescriptionModal prescription={issuedPrescription} onClose={() => setShowIssuedModal(false)} />}
     </div>
@@ -111,14 +121,12 @@ function CreatePrescriptionModal({ patientData, onClose, onSuccess }) {
     e.preventDefault();
     setIsIssuing(true);
     try {
-      // --- THIS IS THE KEY CHANGE ---
-      // We are now sending the patient's name and a hospital name along with the other data.
       const response = await axios.post(`${API_URL}/api/prescription/create`, {
         patientAbhaId: patientData.abhaId,
-        patientName: patientData.personalInfo.name, // <-- ADDED
-        doctorName: "Dr. A. Sharma", 
-        hospitalName: "Aarogya Digital Clinic", // <-- ADDED
-        medications: medications.filter(m => m.name),
+        patientName: patientData.personalInfo.name,
+        doctorName: "Dr. A. Sharma", // This would be dynamic in a real app
+        hospitalName: "Aarogya Digital Clinic",
+        medications: medications,
         notes,
       });
       onSuccess(response.data);
@@ -147,7 +155,9 @@ function CreatePrescriptionModal({ patientData, onClose, onSuccess }) {
             ))}
           </div>
           <button type="button" onClick={addMedicationRow} className="mt-3 text-sm font-semibold text-green-600 flex items-center"><Plus className="h-4 w-4 mr-1"/>Add Medication</button>
+          
           <textarea rows="3" placeholder="Additional notes for the patient or pharmacist..." value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full mt-4 border p-2 rounded-md"></textarea>
+
           <div className="flex justify-end space-x-4 mt-6">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
             <button type="submit" disabled={isIssuing} className="px-4 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:bg-green-300">{isIssuing ? "Issuing..." : "Sign & Issue"}</button>
@@ -172,15 +182,18 @@ function IssuedPrescriptionModal({ prescription, onClose }) {
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4"/>
         <h2 className="text-2xl font-bold">Prescription Issued Successfully!</h2>
         <p className="text-gray-600 mt-2">Share the QR Code or the token with the patient.</p>
+        
         <div className="my-6">
           <QRCodeSVG value={prescription.token} size={200} className="mx-auto" />
         </div>
+        
         <div className="relative">
           <input type="text" readOnly value={prescription.token} className="w-full p-3 pr-12 border rounded-lg bg-gray-100 font-mono text-sm"/>
           <button onClick={copyToClipboard} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-800">
             {copied ? <CheckCircle className="h-5 w-5 text-green-600"/> : <Copy className="h-5 w-5"/>}
           </button>
         </div>
+        
         <button onClick={onClose} className="mt-6 w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black">Close</button>
       </div>
     </div>

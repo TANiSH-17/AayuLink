@@ -5,20 +5,19 @@ const personalInfoSchema = new mongoose.Schema({
   age: { type: Number, required: true },
   gender: { type: String, required: true },
   bloodType: { type: String, required: true },
-  emergencyContact: { type: String, required: true }
+  emergencyContact: { type: String, required: true },
+  // --- THIS IS THE FIX ---
+  // We are now telling the database that a personalNumber is required.
+  personalNumber: { type: String, required: true }
 }, { _id: false });
 
 const patientSchema = new mongoose.Schema({
   abhaId: { type: String, required: true, unique: true },
   personalInfo: { type: personalInfoSchema, required: true },
-  
-  // --- FIX #1: Changed type from ObjectId to String ---
-  // This allows us to store the hospital's name directly.
   registeredAtHospital: { 
     type: String, 
     required: true 
   },
-  
   allergies: [{ type: String }],
   chronicConditions: [{ type: String }],
   currentMedications: [{
@@ -28,3 +27,4 @@ const patientSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Patient', patientSchema);
+

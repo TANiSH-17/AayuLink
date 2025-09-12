@@ -1,27 +1,21 @@
-// backend/models/Hospital.js
 const mongoose = require('mongoose');
 
-const HospitalSchema = new mongoose.Schema({
+const hospitalSchema = new mongoose.Schema({
+  // A descriptive name for the hospital, e.g., "Apollo Hospital, Mumbai"
   name: {
     type: String,
-    required: [true, 'Hospital name is required'],
-    unique: true,
+    required: [true, 'A hospital name is required for registration.'],
     trim: true
   },
-  specialCode: {
+  // The unique code used for admin registration
+  code: {
     type: String,
-    required: [true, 'A special code is required for registration'],
-    unique: true,
-    trim: true
-  },
-  address: {
-    type: String,
-    trim: true
-  },
-  city: {
-    type: String,
-    trim: true
+    required: [true, 'A special hospital code is required.'],
+    unique: true, // Ensures no two hospitals can have the same code
+    trim: true,
+    uppercase: true, // Automatically converts codes to uppercase for consistency
   }
-});
+}, { timestamps: true });
 
-module.exports = mongoose.model('Hospital', HospitalSchema);
+module.exports = mongoose.model('Hospital', hospitalSchema);
+

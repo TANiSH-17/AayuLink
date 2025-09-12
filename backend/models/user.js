@@ -22,12 +22,14 @@ const userSchema = new mongoose.Schema({
   hospitalCode: {
     type: String,
     // This field is only required if the user's role is 'admin'
-    required: function() { return this.role === 'admin'; }
+    required: function() { return this.role === 'admin'; },
+    uppercase: true,
   }
 }, { timestamps: true });
 
-// Hash the password before saving the user model
+// This function automatically hashes the user's password before saving it to the database
 userSchema.pre('save', async function (next) {
+  // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) {
     return next();
   }
@@ -36,9 +38,10 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare entered password with hashed password
+// This is a helper method to compare the password entered during login with the hashed password in the database
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
+
