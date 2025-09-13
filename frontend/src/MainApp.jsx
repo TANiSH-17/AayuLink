@@ -1,38 +1,56 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import AarogyaLoader from './components/AarogyaLoader';
-import LandingPage from './components/LandingPage';
-import PatientLookupPage from './components/PatientLookupPage';
-import DashboardLayout from './components/dashboard/DashboardLayout';
-import ValidatorPage from './components/ValidatorPage';
-import OtpVerificationModal from './components/OtpVerificationModal';
+import AarogyaLoader from './components/AarogyaLoader.jsx';
+import LandingPage from './components/LandingPage.jsx';
+import PatientLookupPage from './components/PatientLookupPage.jsx';
+import DashboardLayout from './components/dashboard/DashboardLayout.jsx';
+import ValidatorPage from './components/ValidatorPage.jsx';
+import OtpVerificationModal from './components/OtpVerificationModal.jsx';
 
 const API_URL = 'http://localhost:8000';
 
-// This component now contains all the core logic for your application.
+// Constants to control the cross-fade timing
+const LOADER_VISIBLE_DURATION = 2500; // How long the loader stays fully visible
+const CROSSFADE_DURATION = 800;       // The duration of the fade animation
+
 export default function MainApp() {
-  const [showLoader, setShowLoader] = useState(true);
+  // State management for the animation flow
+  const [isLoaderMounted, setIsLoaderMounted] = useState(true);   // Controls if the loader is in the DOM
+  const [isLoaderExiting, setIsLoaderExiting] = useState(false);  // Triggers the loader's fade-out
+  const [isAppVisible, setIsAppVisible] = useState(false);        // Triggers the main app's appearance
+
+  // Existing application states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState('individual');
   const [authError, setAuthError] = useState('');
   const [showValidator, setShowValidator] = useState(false);
-
-  // This state controls which patient and view the dashboard loads
   const [dashboardConfig, setDashboardConfig] = useState({ abhaId: null, initialView: 'history' });
-
-  // This state manages the pop-up modal for OTP consent
   const [consentState, setConsentState] = useState({ awaitingOtp: false, patientToVerify: null, otpError: '' });
 
+  // useEffect to orchestrate the animation timers
   useEffect(() => {
-    const timer = setTimeout(() => setShowLoader(false), 1500);
-    return () => clearTimeout(timer);
+    // Timer to start the cross-fade
+    const transitionTimer = setTimeout(() => {
+      setIsLoaderExiting(true); // Tell loader to start fading out
+      setIsAppVisible(true);    // Tell main app to appear
+    }, LOADER_VISIBLE_DURATION);
+
+    // Timer to remove the loader from the DOM after the animation is complete
+    const unmountTimer = setTimeout(() => {
+      setIsLoaderMounted(false);
+    }, LOADER_VISIBLE_DURATION + CROSSFADE_DURATION);
+
+    return () => {
+      clearTimeout(transitionTimer);
+      clearTimeout(unmountTimer);
+    };
   }, []);
 
   const handleLogin = async (username, password, role) => {
     setAuthError('');
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, { username, password });
-      setUserRole(response.data.role); // Use the role from the backend
+      await axios.post(`${API_URL}/api/auth/login`, { username, password });
+      setUserRole(role);
       setIsAuthenticated(true);
     } catch (err) {
       setAuthError(err.response?.data?.message || 'Login failed.');
@@ -45,60 +63,46 @@ export default function MainApp() {
     setDashboardConfig({ abhaId: null, initialView: 'history' });
   };
   
-  // This is the central point for access control
   const handlePatientSelect = (abhaId, view, patientName) => {
     if (view === 'emergency') {
-      // If "Emergency Mode" is clicked, bypass OTP and go straight to the dashboard
       setDashboardConfig({ abhaId, initialView: 'emergency' });
     } else {
-      // For "Complete History", trigger the OTP consent flow
       setConsentState({ awaitingOtp: true, patientToVerify: { abhaId, name: patientName }, otpError: '' });
     }
   };
   
-  // This handles the OTP verification using the hardcoded "magic" OTP
   const handleOtpVerify = (otp) => {
-    // The OTP is hardcoded here as requested
     if (otp === "081106") {
-      // If correct, load the dashboard with the patient's data
       setDashboardConfig({ abhaId: consentState.patientToVerify.abhaId, initialView: 'history' });
-      // Close and reset the modal state
       setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' });
     } else {
-      // If incorrect, show an error message
       setConsentState(prev => ({ ...prev, otpError: 'Invalid OTP. Please try again.' }));
     }
   };
 
   const handleSignUp = async (username, password, role, hospitalName, specialCode) => {
-      // This is a placeholder for the full signup logic you built
       console.log("Signup attempt:", { username, role, hospitalName, specialCode });
       alert('Signup functionality is for demonstration and logs to the console.');
   };
   
   const toggleValidator = () => setShowValidator(prev => !prev);
 
-  // This is the central logic that decides what to show on the screen
-  const renderContent = () => {
-    if (showLoader) return <AarogyaLoader />;
+  // This function renders the main content of the app, post-loader.
+  const renderAppContent = () => {
     if (showValidator) return <ValidatorPage onBack={toggleValidator} />;
     
     if (isAuthenticated) {
-      if (userRole === 'admin' || dashboardConfig.abhaId) {
+      if (dashboardConfig.abhaId) {
         return <DashboardLayout 
                   key={dashboardConfig.abhaId}
                   onLogout={handleLogout} 
-                  // For admins, load a default patient if none is selected yet
-                  initialAbhaId={dashboardConfig.abhaId || '12-3456-7890-0001'}
+                  initialAbhaId={dashboardConfig.abhaId}
                   initialView={dashboardConfig.initialView}
                 />;
       } else {
-        // If logged in as an individual but no patient is selected yet, show the lookup page
         return (
           <>
             <PatientLookupPage onPatientSelect={handlePatientSelect} />
-            
-            {/* This line conditionally renders the OTP modal when needed */}
             {consentState.awaitingOtp && (
               <OtpVerificationModal 
                 patientName={consentState.patientToVerify.name}
@@ -112,10 +116,24 @@ export default function MainApp() {
       }
     }
     
-    // By default, show the main landing page
     return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onValidatorClick={toggleValidator} authError={authError} />;
   };
 
-  return <div>{renderContent()}</div>;
+  // The main return now layers the loader and the app content for the cross-fade effect.
+  return (
+    <div>
+      {/* The AarogyaLoader is only present in the DOM while isLoaderMounted is true.
+        We pass the isExiting prop to it; when this becomes true, the loader's
+        internal CSS will trigger its fade-out animation.
+      */}
+      {isLoaderMounted && <AarogyaLoader isExiting={isLoaderExiting} />}
+
+      {/* The main application content only starts rendering when isAppVisible becomes true.
+        The LandingPage component (the first thing to appear) is responsible for its
+        own fade-in animation, creating the desired cross-fade effect.
+      */}
+      {isAppVisible && renderAppContent()}
+    </div>
+  );
 }
 

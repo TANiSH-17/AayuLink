@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const medicationSchema = new mongoose.Schema({
   name: { type: String, required: true },
   dosage: { type: String, required: true },
-  duration: { type: String, required: true },
+  duration: { type: String},
 });
 
 const prescriptionSchema = new mongoose.Schema({

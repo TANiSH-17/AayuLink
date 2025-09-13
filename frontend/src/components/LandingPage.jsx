@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { User, Shield, Building, Hospital as HospitalIcon, Landmark, HeartPulse } from 'lucide-react';
-import LeafletMap from './LeafletMap';
-import { useLanguage } from '../contexts/LanguageContext'; // Import the language hook
+import LeafletMap from './LeafletMap.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 const API_URL = 'http://localhost:8000';
 
@@ -24,9 +24,30 @@ function Field({ name, label, type, placeholder, icon: Icon, value, onChange, re
     );
 }
 
+// The component is now wrapped to handle its own fade-in animation
+export default function LandingPage(props) {
+  const [isVisible, setIsVisible] = useState(false);
 
-export default function LandingPage({ onLogin, authError, onValidatorClick }) {
-  const { toggleLanguage, t } = useLanguage(); // Use the hook to get translations
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 50); 
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    // CHANGED: Added 'transition-all' and a subtle scale effect for a smoother, hardware-accelerated animation.
+    <div 
+      className={`transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+      style={{ willChange: 'opacity, transform' }} // This hints the browser to optimize the animation.
+    >
+        <OriginalLandingPage {...props} />
+    </div>
+  );
+}
+
+
+// Your original LandingPage component is now renamed and placed here
+function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
+  const { toggleLanguage, t } = useLanguage();
   const [role, setRole] = useState('individual');
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState({ username: '', password: '', hospitalName: '', specialCode: '' });
@@ -38,7 +59,6 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
   
-  // This function handles both login and registration form submissions
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -46,25 +66,22 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
     setFormSuccess('');
 
     if (mode === 'login') {
-      // The main App.jsx handles the login logic
       await onLogin(formData.username, formData.password, role);
     } else {
-      // We handle registration directly within this component
       try {
         const payload = {
             username: formData.username,
             password: formData.password,
             role: role,
         };
-        // Add hospital details only for admin registration
         if (role === 'admin') {
             payload.hospitalName = formData.hospitalName;
             payload.specialCode = formData.specialCode;
         }
         await axios.post(`${API_URL}/api/auth/register`, payload);
         setFormSuccess('Registration successful! Please switch to Login.');
-        setFormData({ username: '', password: '', hospitalName: '', specialCode: '' }); // Clear form
-      } catch (err) {
+        setFormData({ username: '', password: '', hospitalName: '', specialCode: '' });
+      } catch (err) { // FIXED: Corrected the syntax of the catch block
         setFormError(err.response?.data?.message || 'Registration failed.');
       }
     }
@@ -91,7 +108,6 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
       </header>
 
       <section className="relative overflow-hidden">
-        {/* ... (backgrounds) ... */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-8 grid lg:grid-cols-2 gap-8 items-start">
             <div className="flex flex-col gap-6">
                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
@@ -101,7 +117,6 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
                     {t.tagline}
                 </p>
 
-                {/* --- The Upgraded Access Portal --- */}
                 <div className="bg-white p-6 rounded-2xl shadow-xl border max-w-md">
                     <div className="flex bg-gray-100 rounded-lg p-1">
                         <button onClick={() => { setRole('individual'); setFormError(''); setFormSuccess(''); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === 'individual' ? 'bg-white shadow' : 'text-gray-500'}`}>{t.individual}</button>
@@ -117,7 +132,6 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
                         <Field name="username" label="Username" type="text" placeholder="Enter your username" icon={User} value={formData.username} onChange={handleInputChange} required/>
                         <Field name="password" label="Password" type="password" placeholder="Enter your password" icon={Shield} value={formData.password} onChange={handleInputChange} required/>
                         
-                        {/* --- KEY CHANGE: These fields only appear for Admin Signup --- */}
                         {role === 'admin' && mode === 'signup' && (
                            <>
                             <Field name="hospitalName" label="Hospital Name" type="text" placeholder="e.g., Apollo Hospital, Mumbai" icon={HospitalIcon} value={formData.hospitalName} onChange={handleInputChange} required/>
@@ -146,7 +160,6 @@ export default function LandingPage({ onLogin, authError, onValidatorClick }) {
             </div>
         </div>
       </section>
-      {/* ... (Your other sections like Advertising, Info Band, and Footer remain unchanged) ... */}
     </div>
   );
 }
