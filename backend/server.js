@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
+// --- FIX: Specify the path to the .env file in the root directory ---
+require('dotenv').config({ path: '../.env' });
 
 // --- Import ALL Route Files ---
 const apiRoutes = require('./routes/api');
@@ -20,6 +21,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- NEW: SERVE STATIC FILES ---
+// This line makes any files inside the 'uploads' directory publicly accessible
+// at the /uploads URL path. For example, a file named report.pdf in the uploads
+// folder will be available at http://localhost:8000/uploads/report.pdf
+app.use('/uploads', express.static('uploads'));
+
 // --- Tell Express to Use the Routes ---
 // The order is important. More specific routes must come before general ones.
 app.use('/api/auth', authRoutes);
@@ -36,13 +43,10 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 8000;
 
 // --- Database Connection & Server Start ---
-// This is the definitive fix. We connect to the database FIRST.
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected successfully.');
     
-    // --- THEN, we start the server ---
-    // This guarantees the server will not accept requests until the database is ready.
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log('NOTE: To reset the database, run "npm run seed" in a separate terminal.');

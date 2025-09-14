@@ -1,24 +1,22 @@
-import React, { useMemo } from 'react';
-import MedicalRecordCard from '../MedicalRecordCard'; // This path assumes MedicalRecordCard.jsx is in the parent components folder
-import { Heart, Brain, Activity, PersonStanding } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+// Corrected import paths to be absolute, ensuring the build system finds them.
+import MedicalRecordCard from '/src/components/MedicalRecordCard.jsx';
+import AddHistoryModal from '/src/components/dashboard/AddHistoryModal.jsx';
+import { Heart, Brain, Activity, PersonStanding, Plus } from 'lucide-react';
 
-// --- DYNAMIC Health Visualizer Component (Now with safety checks) ---
+// HealthVisualizer component remains the same.
 function HealthVisualizer({ medicalHistory }) {
-  const healthFlags = useMemo(() => {
-    // --- THIS IS THE FIX ---
-    // This now safely filters out any records that might be missing data.
-    // The `?.` (optional chaining) and `|| ''` (default value) prevent crashes.
+    // ... (no changes inside this component)
+    const healthFlags = useMemo(() => {
     const historyText = medicalHistory
       .map(r => (r.details?.toLowerCase() || '') + (r.recordType?.toLowerCase() || ''))
       .join(' ');
 
     const flags = { cardiovascular: 'ok', respiratory: 'ok', mental: 'ok', lifestyle: 'ok' };
-
     if (/heart|blood pressure|cholesterol|angina|cardio/.test(historyText)) flags.cardiovascular = 'concern';
     if (/asthma|respiratory|breathing|lungs|bronchitis/.test(historyText)) flags.respiratory = 'concern';
     if (/anxiety|mental|counseling|migraine|headache|stress|depression/.test(historyText)) flags.mental = 'concern';
     if (/fracture|injury|sprain|physiotherapy|sedentary/.test(historyText)) flags.lifestyle = 'concern';
-
     return flags;
   }, [medicalHistory]);
 
@@ -41,9 +39,22 @@ function HealthVisualizer({ medicalHistory }) {
 }
 
 // --- Main Patient History Page ---
-export default function PatientHistory({ patientData }) {
-  // Correctly destructure personalInfo from patientData to access nested details
+// 1. FIX: Receive `currentUser` prop instead of `userRole`
+export default function PatientHistory({ patientData, currentUser, onDataRefresh }) {
+  
+  // --- DEBUGGING LINE ADDED ---
+  console.log('2. Prop received in PatientHistory:', currentUser);
+
   const { personalInfo, medicalHistory, abhaId } = patientData;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 2. FIX: Check the role from within the `currentUser` object
+  const isAdmin = currentUser?.role === 'admin';
+
+  const handleHistoryAdded = () => {
+    onDataRefresh();
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -58,19 +69,44 @@ export default function PatientHistory({ patientData }) {
         </div>
       </div>
 
-      {/* Health Visualizer */}
       <HealthVisualizer medicalHistory={medicalHistory} />
 
-      {/* Medical History Timeline */}
       <div>
-        <h3 className="text-2xl font-semibold text-gray-800 mb-4">Complete Medical History</h3>
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-semibold text-gray-800">Complete Medical History</h3>
+            {/* This button will now correctly appear for admins */}
+            {isAdmin && (
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-sm hover:bg-green-700 transition-all duration-200"
+                >
+                    <Plus size={18} />
+                    Add New Entry
+                </button>
+            )}
+        </div>
         <div className="space-y-4">
-          {medicalHistory.map(record => (
-            <MedicalRecordCard key={record._id || record.recordId} record={record} />
-          ))}
+          {medicalHistory && medicalHistory.length > 0 ? (
+            medicalHistory.map(record => (
+              <MedicalRecordCard key={record._id || record.recordId} record={record} />
+            ))
+          ) : (
+            <div className="text-center py-10 px-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">No medical history recorded yet.</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {isModalOpen && (
+        <AddHistoryModal 
+            abhaId={abhaId}
+            onClose={() => setIsModalOpen(false)}
+            onHistoryAdded={handleHistoryAdded}
+            // 3. FIX: Pass the hospital name from the currentUser object
+            hospitalName={currentUser?.hospitalName}
+        />
+      )}
     </div>
   );
 }
-

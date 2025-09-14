@@ -1,26 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Sidebar from './Sidebar';
-import PatientHistory from './PatientHistory';
-import EmergencyMode from './EmergencyMode';
-import AIChatPage from './AIChatPage';
-import ReportsScans from './ReportsScans';
-import EPrescriptionPage from './ePrescriptionPage';
-import FloatingChatbot from './FloatingChatbot'; // <-- NEW: Import the chatbot component
+// Corrected import paths to ensure module resolution.
+import Sidebar from './Sidebar.jsx';
+import PatientHistory from './PatientHistory.jsx';
+import EmergencyMode from './EmergencyMode.jsx';
+import AIChatPage from './AIChatPage.jsx';
+import ReportsScans from './ReportsScans.jsx';
+import EPrescriptionPage from './ePrescriptionPage.jsx';
+import FloatingChatbot from './FloatingChatbot.jsx';
+import NationalHealthPulse from './NationalHealthPulse.jsx';
 
 const API_URL = 'http://localhost:8000';
 
-export default function DashboardLayout({ onLogout, initialAbhaId, initialView }) {
+export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbhaId, initialView, currentUser }) {
   const [activeView, setActiveView] = useState(initialView || 'history');
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (initialAbhaId) {
-        fetchRecords(initialAbhaId);
+    if (initialAbhaId && activeView !== 'nationalPulse') {
+      fetchRecords(initialAbhaId);
+    } else {
+      setIsLoading(false);
     }
-  }, [initialAbhaId]);
+  }, [initialAbhaId, activeView]);
 
   const fetchRecords = async (abhaId) => {
     setIsLoading(true);
@@ -35,49 +39,97 @@ export default function DashboardLayout({ onLogout, initialAbhaId, initialView }
       setIsLoading(false);
     }
   };
-  
+
   const handleDataRefresh = () => {
-    fetchRecords(initialAbhaId);
+    if (initialAbhaId) {
+      fetchRecords(initialAbhaId);
+    }
   };
-  
+
   const renderActiveView = () => {
-    if (isLoading) return <div className="flex-1 p-8 text-center font-semibold text-lg">Loading Patient Data...</div>;
-    if (error || !patientData) return <div className="flex-1 p-8 text-center text-red-600 font-semibold text-lg">{error || 'No patient found.'}</div>;
+    if (activeView === 'nationalPulse') {
+      return <NationalHealthPulse />;
+    }
+
+    if (isLoading)
+      return (
+        <div className="flex-1 p-8 text-center font-semibold text-lg">
+          Loading Patient Data...
+        </div>
+      );
+    if (error || !patientData)
+      return (
+        <div className="flex-1 p-8 text-center text-red-600 font-semibold text-lg">
+          {error || 'No patient found.'}
+        </div>
+      );
 
     switch (activeView) {
-      case 'history': 
-        return <PatientHistory patientData={patientData} />;
-      case 'emergency': 
+      case 'history':
+        return (
+          <PatientHistory
+            patientData={patientData}
+            currentUser={currentUser}
+            onDataRefresh={handleDataRefresh}
+          />
+        );
+
+      case 'emergency':
         return <EmergencyMode patientData={patientData} />;
-      case 'ai_chat': 
-        return <AIChatPage medicalHistory={patientData.medicalHistory} />;
-      case 'reports': 
-        return <ReportsScans />;
+
+      case 'ai_chat':
+        return <AIChatPage patientData={patientData} />;
+
+      case 'reports':
+        return (
+          <ReportsScans
+            patientData={patientData}
+            currentUser={currentUser}
+            onDataRefresh={handleDataRefresh}
+          />
+        );
+
       case 'e_prescription':
-        return <EPrescriptionPage patientData={patientData} onPrescriptionSuccess={handleDataRefresh} />;
-      default: 
-        return <PatientHistory patientData={patientData} />;
+        return (
+          <EPrescriptionPage
+            patientData={patientData}
+            onPrescriptionSuccess={handleDataRefresh}
+          />
+        );
+
+      default:
+        return (
+          <PatientHistory
+            patientData={patientData}
+            currentUser={currentUser}
+            onDataRefresh={handleDataRefresh}
+          />
+        );
     }
   };
 
   return (
     <div className="min-h-screen flex bg-slate-50">
-      <Sidebar 
-        activeView={activeView} 
-        setActiveView={setActiveView} 
-        onLogout={onLogout} 
+      <Sidebar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        onLogout={onLogout}
+        onSwitchPatient={onSwitchPatient}
         patientName={patientData?.personalInfo.name}
       />
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      {/* --- THIS IS THE FIX --- */}
+      {/* A left margin (ml-64) is added to push the main content to the right of the fixed sidebar. */}
+      <div className="flex-1 flex flex-col ml-64">
+        <main
+          className={`flex-1 ${
+            activeView === 'nationalPulse' ? '' : 'p-4 sm:p-6 lg:p-8'
+          }`}
+        >
           {renderActiveView()}
         </main>
       </div>
-
-      {/* --- NEW: The Floating Chatbot is added here --- */}
-      {/* It will only render if patient data has been successfully loaded */}
-      {patientData && (
-        <FloatingChatbot medicalHistory={patientData.medicalHistory} />
+      {patientData && activeView !== 'nationalPulse' && (
+        <FloatingChatbot patientData={patientData} />
       )}
     </div>
   );

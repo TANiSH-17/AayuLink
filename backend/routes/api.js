@@ -1,5 +1,7 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const multer = require('multer');
+const path = require('path');
 const Patient = require('../models/patient');
 const MedicalRecord = require('../models/medicalRecord');
 
@@ -9,12 +11,22 @@ const router = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- MOCK DATA AND SEEDER HAVE BEEN MOVED TO /routes/seedDB.js ---
+// --- MULTER CONFIGURATION FOR FILE UPLOADS ---
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 
 // --- DATABASE-CONNECTED ROUTES ---
 
-// --- UPDATED: This route now correctly assembles the patientData object from the DB ---
 router.post('/fetch-records', async (req, res) => {
   try {
     const { abhaId } = req.body;
@@ -25,18 +37,16 @@ router.post('/fetch-records', async (req, res) => {
 
     const medicalHistory = await MedicalRecord.find({ patient: abhaId }).sort({ date: -1 });
 
-    // --- THIS IS THE FIX ---
-    // We now pass the entire personalInfo object from the database directly,
-    // ensuring all nested fields like name, bloodType, and emergencyContact are all included.
     const patientData = {
       abhaId: patient.abhaId,
-      personalInfo: patient.personalInfo, // This correctly passes the entire nested object
+      personalInfo: patient.personalInfo,
       criticalInfo: {
         allergies: patient.allergies,
         chronicConditions: patient.chronicConditions,
         currentMedications: patient.currentMedications
       },
-      medicalHistory: medicalHistory
+      medicalHistory: medicalHistory,
+      reportsAndScans: patient.reportsAndScans || []
     };
     res.status(200).json(patientData);
 
@@ -46,7 +56,6 @@ router.post('/fetch-records', async (req, res) => {
   }
 });
 
-// This route correctly looks up a patient's name and personal phone number.
 router.post('/patient-lookup', async (req, res) => {
   try {
     const { abhaId } = req.body;
@@ -73,7 +82,78 @@ router.post('/patient-lookup', async (req, res) => {
 });
 
 
-// --- AI Routes (These will now receive the correct, live data) ---
+// --- NEW ADMIN WRITE ROUTES ---
+
+router.post('/medical-history/add', async (req, res) => {
+  const { abhaId, entry } = req.body;
+
+  if (!abhaId || !entry || !entry.summary) {
+    return res.status(400).json({ message: 'ABHA ID and a valid entry object are required.' });
+  }
+
+  try {
+    const newRecord = new MedicalRecord({
+        patient: abhaId,
+        recordType: entry.type,
+        details: entry.summary,
+        doctor: entry.doctor,
+        hospitalName: entry.hospital,
+        date: entry.date,
+    });
+
+    await newRecord.save();
+    res.status(200).json({ message: 'Medical history updated successfully.', record: newRecord });
+  } catch (error) {
+    console.error("Error adding medical history:", error);
+    res.status(500).json({ message: 'Server error while updating history.', error: error.message });
+  }
+});
+
+// --- FINAL FIX FOR REPORT UPLOAD ---
+router.post('/reports/upload', upload.single('reportFile'), async (req, res) => {
+  const { abhaId, reportType, reportDate } = req.body;
+  const file = req.file;
+
+  if (!abhaId || !file) {
+    return res.status(400).json({ message: 'ABHA ID and a file are required.' });
+  }
+
+  try {
+    const newReport = {
+      type: reportType || 'General Report',
+      date: reportDate || new Date(),
+      fileName: file.filename,
+      filePath: file.path,
+      format: file.mimetype,
+    };
+
+    // Use a direct and more reliable database update operation.
+    const updatedPatient = await Patient.findOneAndUpdate(
+      { abhaId: abhaId },
+      { 
+        $push: { 
+          reportsAndScans: {
+            $each: [newReport],
+            $position: 0 // This prepends the new report to the start of the array (like unshift)
+          } 
+        } 
+      },
+      { new: true } // This option returns the updated document
+    );
+
+    if (!updatedPatient) {
+      return res.status(404).json({ message: 'Patient not found.' });
+    }
+
+    res.status(200).json({ message: 'Report uploaded successfully.', patient: updatedPatient });
+  } catch (error) {
+    console.error("Error uploading report:", error);
+    res.status(500).json({ message: 'Server error while uploading report.', error: error.message });
+  }
+});
+
+
+// --- AI Routes ---
 
 router.post('/summarize', async (req, res) => {
   const { medicalRecords } = req.body;

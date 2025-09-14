@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { User, Shield, Building, Hospital as HospitalIcon, Landmark, HeartPulse } from 'lucide-react';
+import { User, Shield, Building, Hospital as HospitalIcon } from 'lucide-react';
 import LeafletMap from './LeafletMap.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
-
-const API_URL = 'http://localhost:8000';
 
 // A reusable form field component for a clean, consistent UI
 function Field({ name, label, type, placeholder, icon: Icon, value, onChange, required = false }) {
@@ -34,26 +31,25 @@ export default function LandingPage(props) {
   }, []);
 
   return (
-    // CHANGED: Added 'transition-all' and a subtle scale effect for a smoother, hardware-accelerated animation.
     <div 
       className={`transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-      style={{ willChange: 'opacity, transform' }} // This hints the browser to optimize the animation.
+      style={{ willChange: 'opacity, transform' }}
     >
         <OriginalLandingPage {...props} />
     </div>
   );
 }
 
-
 // Your original LandingPage component is now renamed and placed here
-function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
+function OriginalLandingPage({ onLogin, onSignUp, authError, onValidatorClick }) {
   const { toggleLanguage, t } = useLanguage();
   const [role, setRole] = useState('individual');
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState({ username: '', password: '', hospitalName: '', specialCode: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  // --- FIX: This component will now manage its own error and success messages for registration ---
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -68,24 +64,29 @@ function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
     if (mode === 'login') {
       await onLogin(formData.username, formData.password, role);
     } else {
+      // --- FIX: Wrap signup in a try/catch to handle success and error messages internally ---
       try {
-        const payload = {
-            username: formData.username,
-            password: formData.password,
-            role: role,
-        };
-        if (role === 'admin') {
-            payload.hospitalName = formData.hospitalName;
-            payload.specialCode = formData.specialCode;
-        }
-        await axios.post(`${API_URL}/api/auth/register`, payload);
+        await onSignUp(
+          formData.username,
+          formData.password,
+          role,
+          formData.hospitalName,
+          formData.specialCode
+        );
         setFormSuccess('Registration successful! Please switch to Login.');
+        // Clear the form on success
         setFormData({ username: '', password: '', hospitalName: '', specialCode: '' });
-      } catch (err) { // FIXED: Corrected the syntax of the catch block
-        setFormError(err.response?.data?.message || 'Registration failed.');
+      } catch (err) {
+        // This will catch registration-specific errors
+        setFormError(err.message || 'Registration failed. Please try again.');
       }
     }
     setIsLoading(false);
+  };
+
+  const clearMessages = () => {
+      setFormError('');
+      setFormSuccess('');
   };
 
   return (
@@ -94,7 +95,7 @@ function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="h-6 w-6 rounded-md bg-green-700" />
-                <span className="text-lg font-semibold tracking-tight text-gray-800">Aarogya</span>
+                <span className="text-lg font-semibold tracking-tight text-gray-800">AayuLink</span>
             </div>
             <div className="flex items-center space-x-4">
                  <button onClick={onValidatorClick} className="font-semibold text-sm text-gray-600 hover:text-green-700">
@@ -119,8 +120,8 @@ function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
 
                 <div className="bg-white p-6 rounded-2xl shadow-xl border max-w-md">
                     <div className="flex bg-gray-100 rounded-lg p-1">
-                        <button onClick={() => { setRole('individual'); setFormError(''); setFormSuccess(''); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === 'individual' ? 'bg-white shadow' : 'text-gray-500'}`}>{t.individual}</button>
-                        <button onClick={() => { setRole('admin'); setFormError(''); setFormSuccess(''); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === 'admin' ? 'bg-white shadow' : 'text-gray-500'}`}>{t.admin}</button>
+                        <button onClick={() => { setRole('individual'); clearMessages(); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === 'individual' ? 'bg-white shadow' : 'text-gray-500'}`}>{t.individual}</button>
+                        <button onClick={() => { setRole('admin'); clearMessages(); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === 'admin' ? 'bg-white shadow' : 'text-gray-500'}`}>{t.admin}</button>
                     </div>
                     
                     <div className="mt-6 text-center">
@@ -138,7 +139,8 @@ function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
                             <Field name="specialCode" label="Special Hospital Code" type="text" placeholder="e.g., APOLLO-MUM-01" icon={Building} value={formData.specialCode} onChange={handleInputChange} required/>
                            </>
                         )}
-
+                        
+                        {/* --- FIX: Display internal form messages OR login errors from parent --- */}
                         {(authError || formError) && <p className="text-sm text-red-600 text-center">{authError || formError}</p>}
                         {formSuccess && <p className="text-sm text-green-600 text-center">{formSuccess}</p>}
                         
@@ -149,7 +151,7 @@ function OriginalLandingPage({ onLogin, authError, onValidatorClick }) {
 
                     <p className="text-xs text-gray-500 text-center mt-4">
                         {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-                        <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setFormError(''); setFormSuccess(''); }} className="font-semibold text-green-600 hover:underline ml-1">
+                        <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); clearMessages(); }} className="font-semibold text-green-600 hover:underline ml-1">
                             {mode === 'login' ? 'Sign Up' : 'Login'}
                         </button>
                     </p>
