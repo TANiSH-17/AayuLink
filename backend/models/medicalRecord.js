@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 
 const medicalRecordSchema = new mongoose.Schema({
+  // ✅ --- THIS IS THE FIX ---
+  // Add the recordId field to match the database index.
+  recordId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   patient: { 
     type: String, 
     ref: 'Patient',

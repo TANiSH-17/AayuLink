@@ -1,24 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-// Ensure correct relative import paths
 import Sidebar from './Sidebar.jsx';
 import PatientHistory from './PatientHistory.jsx';
 import EmergencyMode from './EmergencyMode.jsx';
 import AIChatPage from './AIChatPage.jsx';
 import ReportsScans from './ReportsScans.jsx';
-import EPrescriptionPage from './EPrescriptionPage.jsx'; // ✅ Capitalized to match file
+import EPrescriptionPage from './ePrescriptionPage.jsx';
 import FloatingChatbot from './FloatingChatbot.jsx';
 import NationalHealthPulse from './NationalHealthPulse.jsx';
 
 const API_URL = 'http://localhost:8000';
 
-export default function DashboardLayout({
-  onLogout,
-  onSwitchPatient,
-  initialAbhaId,
-  initialView,
-  currentUser,
-}) {
+export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbhaId, initialView, currentUser }) {
   const [activeView, setActiveView] = useState(initialView || 'history');
   const [patientData, setPatientData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,27 +40,28 @@ export default function DashboardLayout({
   };
 
   const handleDataRefresh = () => {
-    if (initialAbhaId) fetchRecords(initialAbhaId);
+    if (initialAbhaId) {
+      fetchRecords(initialAbhaId);
+    }
   };
 
   const renderActiveView = () => {
-    if (activeView === 'nationalPulse') return <NationalHealthPulse />;
+    if (activeView === 'nationalPulse') {
+      return <NationalHealthPulse />;
+    }
 
-    if (isLoading) {
+    if (isLoading)
       return (
         <div className="flex-1 p-8 text-center font-semibold text-lg">
           Loading Patient Data...
         </div>
       );
-    }
-
-    if (error || !patientData) {
+    if (error || !patientData)
       return (
         <div className="flex-1 p-8 text-center text-red-600 font-semibold text-lg">
           {error || 'No patient found.'}
         </div>
       );
-    }
 
     switch (activeView) {
       case 'history':
@@ -78,13 +72,10 @@ export default function DashboardLayout({
             onDataRefresh={handleDataRefresh}
           />
         );
-
       case 'emergency':
         return <EmergencyMode patientData={patientData} />;
-
       case 'ai_chat':
         return <AIChatPage patientData={patientData} />;
-
       case 'reports':
         return (
           <ReportsScans
@@ -93,16 +84,14 @@ export default function DashboardLayout({
             onDataRefresh={handleDataRefresh}
           />
         );
-
       case 'e_prescription':
         return (
           <EPrescriptionPage
             patientData={patientData}
-            currentUser={currentUser}
+            currentUser={currentUser} 
             onPrescriptionSuccess={handleDataRefresh}
           />
         );
-
       default:
         return (
           <PatientHistory
@@ -121,14 +110,11 @@ export default function DashboardLayout({
         setActiveView={setActiveView}
         onLogout={onLogout}
         onSwitchPatient={onSwitchPatient}
-        patientName={patientData?.personalInfo?.name}
+        patientName={patientData?.personalInfo.name}
       />
       <div className="flex-1 flex flex-col ml-64">
-        <main
-          className={`flex-1 ${
-            activeView === 'nationalPulse' ? '' : 'p-4 sm:p-6 lg:p-8'
-          }`}
-        >
+        {/* The className here now has consistent padding for a professional look */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {renderActiveView()}
         </main>
       </div>
