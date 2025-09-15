@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 // Corrected import paths to be absolute, ensuring the build system finds them.
 import MedicalRecordCard from '/src/components/MedicalRecordCard.jsx';
-import AddHistoryModal from '/src/components/dashboard/AddHistoryModal.jsx';
+import AddHistoryModal from '/src/components/Dashboard/AddHistoryModal.jsx';
 import { Heart, Brain, Activity, PersonStanding, Plus } from 'lucide-react';
 
 // HealthVisualizer component remains the same.
