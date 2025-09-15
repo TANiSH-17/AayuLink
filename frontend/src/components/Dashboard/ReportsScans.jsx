@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Download, Upload } from 'lucide-react';
 import UploadReportModal from './UploadReportModal.jsx';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function ReportCard({ report }) {
   const reportUrl = `${API_URL}/${report.filePath}`;

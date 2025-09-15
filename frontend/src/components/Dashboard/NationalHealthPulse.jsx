@@ -6,7 +6,7 @@ import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import PredictionCard from './PredictionCard';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // --- MOCK DATA GENERATION ---
 const generateRandomPoints = (centerLat, centerLng, radius, count, intensityModifier) => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { X, Search, CheckCircle, AlertTriangle, ArrowLeft, Camera } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // --- NEW QR Code Scanner Component ---
 // This component handles the camera and scanning logic using the html5-qrcode library.

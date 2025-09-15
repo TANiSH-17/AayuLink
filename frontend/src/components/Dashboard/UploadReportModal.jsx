@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, X, FileText } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function UploadReportModal({ abhaId, onClose, onUploadSuccess }) {
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);

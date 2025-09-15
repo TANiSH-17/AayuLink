@@ -7,8 +7,7 @@ import PatientLookupPage from './components/PatientLookupPage.jsx';
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx';
 import ValidatorPage from './components/ValidatorPage.jsx';
 import OtpVerificationModal from './components/OtpVerificationModal.jsx';
-
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const LOADER_VISIBLE_DURATION = 2500;
 const CROSSFADE_DURATION = 800;
 

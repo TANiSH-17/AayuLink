@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Bot, User, Send, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // A simple component for the "AI is thinking..." animation
 const TypingIndicator = () => (

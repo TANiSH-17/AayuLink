@@ -3,7 +3,7 @@ import axios from 'axios';
 import { User, Shield, History, Search } from 'lucide-react';
 import EmergencyDetailModal from './EmergencyDetailModal';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function PatientLookupPage({ onPatientSelect }) {
   const [abhaId, setAbhaId] = useState('');

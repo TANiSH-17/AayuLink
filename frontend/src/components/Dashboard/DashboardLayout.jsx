@@ -9,7 +9,7 @@ import EPrescriptionPage from './ePrescriptionPage.jsx';
 import FloatingChatbot from './FloatingChatbot.jsx';
 import NationalHealthPulse from './NationalHealthPulse.jsx';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbhaId, initialView, currentUser }) {
   const [activeView, setActiveView] = useState(initialView || 'history');

@@ -3,7 +3,7 @@ import axios from 'axios';
 // ✅ QR Code library import has been removed.
 import { Plus, X, Copy, CheckCircle, Share2, Trash2, Loader2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // --- Notification Component (Unchanged) ---
 function Notification({ message, show }) {
