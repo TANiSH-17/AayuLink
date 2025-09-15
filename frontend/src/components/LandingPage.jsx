@@ -60,7 +60,7 @@ function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel, onEmergen
           <a href="#top" className="flex items-center" onClick={() => setIsMenuOpen(false)}>
             <img src="/images/aayulink-logo.png" alt="AayuLink Logo" className="h-9 object-contain" />
           </a>
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
             {navLinks.map((link) => (
               <button key={link.id} onClick={() => scrollToSection(link.id)} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
                 {link.label}
@@ -228,9 +228,14 @@ function HealthcareChallengeInline() {
 /* ==========================================================================
    Why Choose AyuLink
    ========================================================================== */
+
+  /* ==========================================================================
+   Why Choose AyuLink (with Enhanced Zoom Effect)
+   ========================================================================== */
 function WhyChooseAayulinkInline() {
   const stats = [ { icon: Heart, number: "500+", label: "Connected Hospitals", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, number: "99.9%", label: "Uptime Guarantee", color: "text-green-600", bg: "bg-green-50" }, { icon: Shield, number: "10M+", label: "Records Secured", color: "text-purple-600", bg: "bg-purple-50" }, { icon: Clock, number: "<3s", label: "Average Access Time", color: "text-orange-600", bg: "bg-orange-50" },];
   const features = [ { icon: Shield, title: "Bank-Level Security", description: "Military-grade encryption with HIPAA compliance for complete data protection.", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, title: "Lightning Fast", description: "Access complete medical history in under 3 seconds during emergencies.", color: "text-yellow-600", bg: "bg-yellow-50" }, { icon: Smartphone, title: "Always Available", description: "24/7 mobile access with biometric authentication and offline capabilities.", color: "text-green-600", bg: "bg-green-50" },];
+  
   return (
     <section className="py-24 bg-background-gradient">
       <div className="max-w-7xl mx-auto px-6">
@@ -238,11 +243,13 @@ function WhyChooseAayulinkInline() {
           <h2 className="text-5xl md:text-6xl font-bold mb-8">Healthcare Made <span className="text-primary">Simple</span> & <span className="text-green-600">Secure</span></h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Join millions who trust AayuLink to keep their health data safe, accessible, and under their complete control.</p>
         </div>
+        
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
           {stats.map((s, i) => {
             const IconComp = s.icon;
             return (
-              <div key={i} className="bg-card p-8 text-center rounded-2xl shadow-card hover:shadow-xl hover:scale-105 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              // ✅ ZOOM EFFECT IMPROVED: Changed scale-105 to scale-110 and slowed duration to 500ms
+              <div key={i} className="bg-card p-8 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className={`${s.bg} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4`}><IconComp className={`w-8 h-8 ${s.color}`} /></div>
                 <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{s.number}</div>
                 <div className="text-sm font-medium text-muted-foreground">{s.label}</div>
@@ -250,11 +257,13 @@ function WhyChooseAayulinkInline() {
             );
           })}
         </div>
+
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((f, i) => {
             const IconComp = f.icon;
             return (
-              <div key={i} className="bg-card p-10 text-center rounded-2xl shadow-card hover:shadow-xl hover:scale-105 transition-all duration-300 group animate-slide-up" style={{ animationDelay: `${i * 0.2 + 0.4}s` }}>
+              // ✅ ZOOM EFFECT IMPROVED: Changed scale-105 to scale-110 and slowed duration to 500ms
+              <div key={i} className="bg-card p-10 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out group animate-slide-up" style={{ animationDelay: `${i * 0.2 + 0.4}s` }}>
                 <div className={`${f.bg} w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <IconComp className={`w-10 h-10 ${f.color}`} />
                 </div>
@@ -268,7 +277,6 @@ function WhyChooseAayulinkInline() {
     </section>
   );
 }
-
 /* ==========================================================================
    Improved Network Section
    ========================================================================== */

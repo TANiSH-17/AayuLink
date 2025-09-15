@@ -122,7 +122,7 @@ export default function EPrescriptionPage({ patientData, currentUser, onPrescrip
                 <div className="flex items-center space-x-2">
                     <ShareButton onClick={() => showNotification('e-Prescription token sent to the patient!')} />
                     <CopyTokenButton token={p.token} />
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${ p.status === 'Fulfilled' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }`}>
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full ${ p.status === 'Fulfilled' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }`}>
                       {p.status}
                     </span>
                 </div>

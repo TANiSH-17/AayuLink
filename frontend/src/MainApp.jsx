@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-// Corrected import paths to be relative from the `src` directory.
+import { CheckCircle } from 'lucide-react';
 import AarogyaLoader from './components/AarogyaLoader.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import PatientLookupPage from './components/PatientLookupPage.jsx';
@@ -9,18 +9,28 @@ import ValidatorPage from './components/ValidatorPage.jsx';
 import OtpVerificationModal from './components/OtpVerificationModal.jsx';
 
 const API_URL = 'http://localhost:8000';
+const LOADER_VISIBLE_DURATION = 2500;
+const CROSSFADE_DURATION = 800;
 
-// Constants to control the cross-fade timing
-const LOADER_VISIBLE_DURATION = 2500; // How long the loader stays fully visible
-const CROSSFADE_DURATION = 800;       // The duration of the fade animation
+// ✅ 1. A simple Notification component to handle pop-ups.
+function Notification({ message, show }) {
+  return (
+    <div 
+      className={`fixed top-5 right-5 flex items-center bg-slate-800 text-white p-4 rounded-lg shadow-2xl transition-all duration-500 ease-in-out z-[100] border-l-4 border-green-500 ${show ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'}`}
+    >
+      <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
+      <p className="font-medium text-sm">{message}</p>
+    </div>
+  );
+}
 
 export default function MainApp() {
-  // State management for the animation flow
+  // Animation state
   const [isLoaderMounted, setIsLoaderMounted] = useState(true);
   const [isLoaderExiting, setIsLoaderExiting] = useState(false);
   const [isAppVisible, setIsAppVisible] = useState(false);
 
-  // Authentication & user state
+  // App state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [authError, setAuthError] = useState('');
@@ -29,25 +39,25 @@ export default function MainApp() {
   const [dashboardConfig, setDashboardConfig] = useState({ abhaId: null, initialView: 'history' });
   const [consentState, setConsentState] = useState({ awaitingOtp: false, patientToVerify: null, otpError: '' });
 
-  // Fade-in loader effect
-  useEffect(() => {
-    const transitionTimer = setTimeout(() => {
-      setIsLoaderExiting(true);
-      setIsAppVisible(true);
-    }, LOADER_VISIBLE_DURATION);
-    const unmountTimer = setTimeout(() => {
-      setIsLoaderMounted(false);
-    }, LOADER_VISIBLE_DURATION + CROSSFADE_DURATION);
+  // ✅ 2. State to manage the notification
+  const [notification, setNotification] = useState({ show: false, message: '' });
 
-    return () => {
-      clearTimeout(transitionTimer);
-      clearTimeout(unmountTimer);
-    };
+  useEffect(() => {
+    const transitionTimer = setTimeout(() => { setIsLoaderExiting(true); setIsAppVisible(true); }, LOADER_VISIBLE_DURATION);
+    const unmountTimer = setTimeout(() => { setIsLoaderMounted(false); }, LOADER_VISIBLE_DURATION + CROSSFADE_DURATION);
+    return () => { clearTimeout(transitionTimer); clearTimeout(unmountTimer); };
   }, []);
 
+  // ✅ Helper function to show and hide the notification
+  const showNotification = (message) => {
+    setNotification({ show: true, message });
+    setTimeout(() => {
+        setNotification({ show: false, message: '' });
+    }, 5000);
+  };
+
   const handleLogin = async (username, password, role) => {
-    setAuthError('');
-    setAuthSuccess('');
+    setAuthError(''); setAuthSuccess('');
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, { username, password, role });
       setCurrentUser(response.data.user);
@@ -58,14 +68,10 @@ export default function MainApp() {
   };
 
   const handleSignUp = async (username, password, role, hospitalName, specialCode) => {
-    setAuthError('');
-    setAuthSuccess('');
+    setAuthError(''); setAuthSuccess('');
     try {
       const payload = { username, password, role };
-      if (role === 'admin') {
-        payload.hospitalName = hospitalName;
-        payload.specialCode = specialCode;
-      }
+      if (role === 'admin') { payload.hospitalName = hospitalName; payload.specialCode = specialCode; }
       await axios.post(`${API_URL}/api/auth/register`, payload);
       setAuthSuccess('Registration successful! Please switch to the Login tab.');
     } catch (err) {
@@ -74,16 +80,12 @@ export default function MainApp() {
     }
   };
 
-  // --- THIS IS THE FIX (PART 1) ---
-  // This function resets the app to the patient lookup screen without logging out.
   const handleSwitchPatient = () => {
     setDashboardConfig({ abhaId: null, initialView: 'history' });
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setAuthError('');
+    setIsAuthenticated(false); setCurrentUser(null); setAuthError('');
     setDashboardConfig({ abhaId: null, initialView: 'history' });
   };
 
@@ -95,12 +97,16 @@ export default function MainApp() {
     }
   };
 
+  // ✅ 3. New handler for the "Send OTP" request from the modal
+  const handleSendOtpRequest = (duration) => {
+    console.log(`Consent requested for ${duration} hours.`);
+    showNotification("OTP has been sent to the patient's registered mobile number.");
+    // In a real app, you would make an API call here to your backend to send a real OTP.
+  };
+
   const handleOtpVerify = (otp) => {
     if (otp === '081106') {
-      setDashboardConfig({
-        abhaId: consentState.patientToVerify.abhaId,
-        initialView: 'history',
-      });
+      setDashboardConfig({ abhaId: consentState.patientToVerify.abhaId, initialView: 'history' });
       setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' });
     } else {
       setConsentState((prev) => ({ ...prev, otpError: 'Invalid OTP. Please try again.' }));
@@ -114,17 +120,7 @@ export default function MainApp() {
 
     if (isAuthenticated) {
       if (dashboardConfig.abhaId) {
-        return (
-          <DashboardLayout
-            key={dashboardConfig.abhaId}
-            onLogout={handleLogout}
-            // Pass the new function down to the dashboard
-            onSwitchPatient={handleSwitchPatient}
-            initialAbhaId={dashboardConfig.abhaId}
-            initialView={dashboardConfig.initialView}
-            currentUser={currentUser}
-          />
-        );
+        return <DashboardLayout key={dashboardConfig.abhaId} onLogout={handleLogout} onSwitchPatient={handleSwitchPatient} initialAbhaId={dashboardConfig.abhaId} initialView={dashboardConfig.initialView} currentUser={currentUser} />;
       }
       return (
         <>
@@ -133,34 +129,25 @@ export default function MainApp() {
             <OtpVerificationModal
               patientName={consentState.patientToVerify.name}
               onVerify={handleOtpVerify}
-              onClose={() =>
-                setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' })
-              }
+              onClose={() => setConsentState({ awaitingOtp: false, patientToVerify: null, otpError: '' })}
               error={consentState.otpError}
+              // ✅ 4. Pass the new handler function down to the modal as a prop
+              onSendOtpRequest={handleSendOtpRequest}
             />
           )}
         </>
       );
     }
 
-    return (
-      <LandingPage
-        onLogin={handleLogin}
-        onSignUp={handleSignUp}
-        onValidatorClick={toggleValidator}
-        authError={authError}
-        authSuccess={authSuccess}
-        setAuthError={setAuthError}
-        setAuthSuccess={setAuthSuccess}
-      />
-    );
+    return <LandingPage onLogin={handleLogin} onSignUp={handleSignUp} onValidatorClick={toggleValidator} authError={authError} authSuccess={authSuccess} setAuthError={setAuthError} setAuthSuccess={setAuthSuccess} />;
   };
 
   return (
     <div>
+      {/* ✅ Render the Notification component so it can appear */}
+      <Notification show={notification.show} message={notification.message} />
       {isLoaderMounted && <AarogyaLoader isExiting={isLoaderExiting} />}
       {isAppVisible && renderAppContent()}
     </div>
   );
 }
-

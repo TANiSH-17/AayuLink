@@ -35,6 +35,8 @@ module.exports = {
         'card': '0 4px 15px hsla(var(--shadow-color), 0.05)',
         'glow': '0 0 20px hsla(var(--primary), 0.3)',
         'hero': '0 10px 30px hsla(var(--primary), 0.4)',
+        // ✅ ADD THIS NEW, DARKER SHADOW
+        'dark-hover': '0 20px 35px -5px rgb(0 0 0 / 0.25), 0 8px 15px -6px rgb(0 0 0 / 0.2)',
       },
       keyframes: {
         // Your original keyframes

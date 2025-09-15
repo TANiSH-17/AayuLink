@@ -93,6 +93,7 @@ router.post('/medical-history/add', async (req, res) => {
 
   try {
     const newRecord = new MedicalRecord({
+        recordId: `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         patient: abhaId,
         recordType: entry.type,
         details: entry.summary,
@@ -109,7 +110,6 @@ router.post('/medical-history/add', async (req, res) => {
   }
 });
 
-// --- FINAL FIX FOR REPORT UPLOAD ---
 router.post('/reports/upload', upload.single('reportFile'), async (req, res) => {
   const { abhaId, reportType, reportDate } = req.body;
   const file = req.file;
@@ -127,18 +127,10 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
       format: file.mimetype,
     };
 
-    // Use a direct and more reliable database update operation.
     const updatedPatient = await Patient.findOneAndUpdate(
       { abhaId: abhaId },
-      { 
-        $push: { 
-          reportsAndScans: {
-            $each: [newReport],
-            $position: 0 // This prepends the new report to the start of the array (like unshift)
-          } 
-        } 
-      },
-      { new: true } // This option returns the updated document
+      { $push: { reportsAndScans: { $each: [newReport], $position: 0 } } },
+      { new: true }
     );
 
     if (!updatedPatient) {
@@ -169,17 +161,47 @@ router.post('/summarize', async (req, res) => {
   }
 });
 
+// ✅ --- UPDATED AND IMPROVED AI CHAT ROUTE ---
 router.post('/chat', async (req, res) => {
-  const { medicalRecords, question } = req.body;
-  if (!medicalRecords || !question) return res.status(400).json({ error: 'Records and question are required.' });
-  const recordsText = medicalRecords.map(r => `On ${r.date}, a ${r.recordType} stated: "${r.details}"`).join('\n');
-  const prompt = `Answer the question based only on these records. If the answer isn't present, say so. Records:\n${recordsText}\n\nQuestion: "${question}"`;
+  const { medicalRecords, reportsAndScans, question } = req.body;
+
+  if (!medicalRecords || !question) {
+    return res.status(400).json({ error: 'Medical records and a question are required.' });
+  }
+
+  const historyText = medicalRecords.map(r => `On ${new Date(r.date).toLocaleDateString()}, a ${r.recordType} from ${r.hospitalName} stated: "${r.details}"`).join('\n');
+  
+  const reportsText = reportsAndScans && reportsAndScans.length > 0
+    ? reportsAndScans.map(r => `- ${r.type} (${r.fileName}) dated ${new Date(r.date).toLocaleDateString()}`).join('\n')
+    : "No reports or scans are available for this patient.";
+
+  const prompt = `
+    You are an expert AI medical assistant. Your role is to analyze a patient's complete health record (history and available scans) and provide concise, data-driven insights to a qualified doctor.
+
+    --- PATIENT'S CHRONOLOGICAL MEDICAL HISTORY ---
+    ${historyText}
+
+    --- AVAILABLE REPORTS AND SCANS ---
+    ${reportsText}
+
+    --- DOCTOR'S QUESTION ---
+    "${question}"
+
+    --- YOUR TASK ---
+    Based on ALL the information above, provide a response with three distinct, clearly labeled sections:
+    1.  **Direct Answer:** Directly answer the doctor's question. If the information isn't in the provided text or reports, state that clearly.
+    2.  **Future Outlook:** Based on the patient's complete record, identify 1-2 potential future health risks. Briefly state your reasoning in one sentence. (e.g., "Potential risk of developing X due to Y.")
+    3.  **Suggested Questions:** List 2 intelligent, open-ended follow-up questions the doctor could ask the patient to get a clearer clinical picture.
+
+    IMPORTANT: You are assisting a medical professional. Do not give a definitive diagnosis. Frame possibilities as "consider..." or "potential risk of...". Keep your response structured, professional, and concise.
+  `;
+
   try {
     const result = await model.generateContent(prompt);
     res.status(200).json({ answer: result.response.text() });
   } catch (error) {
     console.error("Error in AI chat:", error);
-    res.status(500).json({ error: 'Failed to get answer.' });
+    res.status(500).json({ error: 'Failed to get answer from the AI.' });
   }
 });
 
@@ -198,4 +220,3 @@ router.post('/blueprint', async (req, res) => {
 });
 
 module.exports = router;
-
