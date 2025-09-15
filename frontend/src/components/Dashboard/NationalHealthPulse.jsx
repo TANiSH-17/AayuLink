@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-// Note: We do not import 'leaflet.heat' here anymore. It will be imported dynamically.
+// Note: We do not import 'leaflet.heat' here. It will be imported dynamically.
 import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import PredictionCard from './PredictionCard';
@@ -38,7 +38,7 @@ export default function NationalHealthPulse() {
     const [predictions, setPredictions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // ✅ UPDATED: A useEffect hook JUST for creating the map once.
+    // This useEffect hook handles map and heat layer creation ONCE.
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
             const map = L.map(mapContainerRef.current).setView([22.5937, 78.9629], 5);
@@ -47,7 +47,7 @@ export default function NationalHealthPulse() {
             }).addTo(map);
             mapInstanceRef.current = map;
 
-            // Dynamically import leaflet.heat AFTER the map is created.
+            // Dynamically import leaflet.heat AFTER the map is created to prevent build errors.
             import('leaflet.heat').then(() => {
                 const heatLayer = L.heatLayer([], { 
                     radius: 25, 
@@ -55,15 +55,15 @@ export default function NationalHealthPulse() {
                     maxZoom: 12 
                 }).addTo(map);
                 heatLayerRef.current = heatLayer;
-                // Set initial data after layer is created
+                // Set initial data after the layer is created
                 if (mockData[activeDisease]) {
                     heatLayer.setLatLngs(mockData[activeDisease].points);
                 }
             });
         }
-    }, [activeDisease]); // Dependency on activeDisease to set initial points correctly
+    }, []); // Empty dependency array ensures this runs only once on mount.
 
-    // ✅ UPDATED: A separate useEffect hook for UPDATING the map when state changes.
+    // This separate useEffect handles all UPDATES to the heat layer when state changes.
     useEffect(() => {
         if (heatLayerRef.current) {
             const diseaseData = mockData[activeDisease];
