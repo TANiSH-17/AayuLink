@@ -4,7 +4,7 @@ import { CheckCircle } from 'lucide-react';
 import AarogyaLoader from './components/AarogyaLoader.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import PatientLookupPage from './components/PatientLookupPage.jsx';
-import DashboardLayout from './components/dashboard/DashboardLayout.jsx';
+import DashboardLayout from './components/Dashboard/DashboardLayout.jsx';
 import ValidatorPage from './components/ValidatorPage.jsx';
 import OtpVerificationModal from './components/OtpVerificationModal.jsx';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
