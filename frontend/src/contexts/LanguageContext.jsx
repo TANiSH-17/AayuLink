@@ -71,4 +71,3 @@ export const LanguageProvider = ({ children }) => {
 
 // This is a custom hook that makes it easy to use our context in any component
 export const useLanguage = () => useContext(LanguageContext);
-
