@@ -16,7 +16,8 @@ const reportSchema = new mongoose.Schema({
     date: { type: Date, required: true },
     fileName: { type: String, required: true },
     filePath: { type: String, required: true },
-    format: { type: String, required: true }
+    format: { type: String, required: true },
+    textContent: { type: String, default: '' } 
 }, { _id: false });
 
 
@@ -30,8 +31,8 @@ const patientSchema = new mongoose.Schema({
   allergies: [{ type: String }],
   chronicConditions: [{ type: String }],
   currentMedications: [{
-    name: String,
-    dosage: String
+    name: { type: String, required: true },
+    dosage: { type: String, required: true }
   }],
   // --- THIS IS THE FIX (PART 2) ---
   // Add the reportsAndScans array to the schema, using the structure defined above.

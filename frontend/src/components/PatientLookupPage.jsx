@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { User, Shield, History, Search } from 'lucide-react';
-import EmergencyDetailModal from './EmergencyDetailModal'; // Import the modal component
+import EmergencyDetailModal from './EmergencyDetailModal';
 
 const API_URL = 'http://localhost:8000';
 
 export default function PatientLookupPage({ onPatientSelect }) {
   const [abhaId, setAbhaId] = useState('');
-  const [patient, setPatient] = useState(null); // Stores basic patient info { abhaId, name }
+  const [patient, setPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // New state to manage the emergency modal
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-  const [emergencyData, setEmergencyData] = useState(null); // Stores full data for the modal
+  const [emergencyData, setEmergencyData] = useState(null);
 
-  // Step 1: Look up the patient's name for confirmation
+  // This function correctly looks up the patient's basic info first.
   const handleLookup = async (e) => {
     e.preventDefault();
     if (!abhaId.trim()) return;
+    
     setIsLoading(true);
     setError('');
     setPatient(null);
@@ -29,19 +28,19 @@ export default function PatientLookupPage({ onPatientSelect }) {
     } catch (err) {
       setError(err.response?.data?.error || 'Could not find patient with that ABHA ID.');
     } finally {
+      // The finally block correctly ensures the loading state is always reset.
       setIsLoading(false);
     }
   };
 
-  // Step 2: Handle the "Quick Details" button click
+  // This function correctly fetches the full patient record for the emergency modal.
   const handleEmergencyLookup = async (id) => {
     setIsLoading(true);
     setError('');
     try {
-        // Use the full /fetch-records endpoint to get all critical data
         const response = await axios.post(`${API_URL}/api/fetch-records`, { abhaId: id });
         setEmergencyData(response.data);
-        setShowEmergencyModal(true); // Open the modal with the fetched data
+        setShowEmergencyModal(true); // Opens the modal with the fetched data.
     } catch (err) {
         setError("Could not fetch the patient's emergency details.");
     } finally {
@@ -92,16 +91,14 @@ export default function PatientLookupPage({ onPatientSelect }) {
             <p className="text-gray-500 text-sm mb-8">ABHA ID: {patient.abhaId}</p>
             
             <div className="space-y-4">
-              {/* This button navigates to the full dashboard */}
               <button 
-                onClick={() => onPatientSelect(patient.abhaId, 'history')}
+                onClick={() => onPatientSelect(patient.abhaId, 'history', patient.name)}
                 className="w-full flex items-center justify-center bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700"
               >
                 <History className="h-5 w-5 mr-2"/>
                 Get Complete Medical History
               </button>
               
-              {/* This button now calls the new function to show the modal */}
               <button 
                 onClick={() => handleEmergencyLookup(patient.abhaId)}
                 disabled={isLoading}
@@ -110,14 +107,14 @@ export default function PatientLookupPage({ onPatientSelect }) {
                 {isLoading ? 'Loading Details...' : <><Shield className="h-5 w-5 mr-2"/>Quick Details (Emergency Mode)</>}
               </button>
             </div>
-             <button onClick={() => setPatient(null)} className="mt-6 text-sm text-gray-500 hover:underline">
+             <button onClick={() => { setPatient(null); setError(''); setAbhaId(''); }} className="mt-6 text-sm text-gray-500 hover:underline">
                Look up another patient
             </button>
           </div>
         )}
       </div>
 
-      {/* --- This line conditionally renders the modal when needed --- */}
+      {/* The modal is correctly rendered conditionally. */}
       {showEmergencyModal && (
         <EmergencyDetailModal 
           patientData={emergencyData} 
@@ -127,4 +124,3 @@ export default function PatientLookupPage({ onPatientSelect }) {
     </div>
   );
 }
-

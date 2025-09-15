@@ -4,6 +4,8 @@ const multer = require('multer');
 const path = require('path');
 const Patient = require('../models/patient');
 const MedicalRecord = require('../models/medicalRecord');
+const fs = require('fs');
+const pdf = require('pdf-parse');
 
 const router = express.Router();
 
@@ -82,7 +84,7 @@ router.post('/patient-lookup', async (req, res) => {
 });
 
 
-// --- NEW ADMIN WRITE ROUTES ---
+// --- ADMIN WRITE ROUTES ---
 
 router.post('/medical-history/add', async (req, res) => {
   const { abhaId, entry } = req.body;
@@ -119,12 +121,16 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
   }
 
   try {
+    const dataBuffer = fs.readFileSync(file.path);
+    const pdfData = await pdf(dataBuffer);
+
     const newReport = {
       type: reportType || 'General Report',
       date: reportDate || new Date(),
       fileName: file.filename,
       filePath: file.path,
       format: file.mimetype,
+      textContent: pdfData.text, 
     };
 
     const updatedPatient = await Patient.findOneAndUpdate(
@@ -137,10 +143,10 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
       return res.status(404).json({ message: 'Patient not found.' });
     }
 
-    res.status(200).json({ message: 'Report uploaded successfully.', patient: updatedPatient });
+    res.status(200).json({ message: 'Report uploaded and processed successfully.', patient: updatedPatient });
   } catch (error) {
-    console.error("Error uploading report:", error);
-    res.status(500).json({ message: 'Server error while uploading report.', error: error.message });
+    console.error("Error uploading and processing report:", error);
+    res.status(500).json({ message: 'Server error while processing report.', error: error.message });
   }
 });
 
@@ -161,7 +167,6 @@ router.post('/summarize', async (req, res) => {
   }
 });
 
-// ✅ --- UPDATED AND IMPROVED AI CHAT ROUTE ---
 router.post('/chat', async (req, res) => {
   const { medicalRecords, reportsAndScans, question } = req.body;
 
@@ -172,27 +177,22 @@ router.post('/chat', async (req, res) => {
   const historyText = medicalRecords.map(r => `On ${new Date(r.date).toLocaleDateString()}, a ${r.recordType} from ${r.hospitalName} stated: "${r.details}"`).join('\n');
   
   const reportsText = reportsAndScans && reportsAndScans.length > 0
-    ? reportsAndScans.map(r => `- ${r.type} (${r.fileName}) dated ${new Date(r.date).toLocaleDateString()}`).join('\n')
+    ? reportsAndScans.map(r => `--- START OF REPORT: ${r.type} (${r.fileName}) ---\n${r.textContent || 'Content could not be extracted.'}\n--- END OF REPORT ---`).join('\n\n')
     : "No reports or scans are available for this patient.";
 
   const prompt = `
     You are an expert AI medical assistant. Your role is to analyze a patient's complete health record (history and available scans) and provide concise, data-driven insights to a qualified doctor.
-
     --- PATIENT'S CHRONOLOGICAL MEDICAL HISTORY ---
     ${historyText}
-
-    --- AVAILABLE REPORTS AND SCANS ---
+    --- AVAILABLE REPORTS AND SCANS (with content) ---
     ${reportsText}
-
     --- DOCTOR'S QUESTION ---
     "${question}"
-
     --- YOUR TASK ---
     Based on ALL the information above, provide a response with three distinct, clearly labeled sections:
     1.  **Direct Answer:** Directly answer the doctor's question. If the information isn't in the provided text or reports, state that clearly.
     2.  **Future Outlook:** Based on the patient's complete record, identify 1-2 potential future health risks. Briefly state your reasoning in one sentence. (e.g., "Potential risk of developing X due to Y.")
     3.  **Suggested Questions:** List 2 intelligent, open-ended follow-up questions the doctor could ask the patient to get a clearer clinical picture.
-
     IMPORTANT: You are assisting a medical professional. Do not give a definitive diagnosis. Frame possibilities as "consider..." or "potential risk of...". Keep your response structured, professional, and concise.
   `;
 
