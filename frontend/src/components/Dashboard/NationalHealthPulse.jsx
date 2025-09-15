@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
+// Note: We do not import 'leaflet.heat' here anymore. It will be imported dynamically.
 import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import PredictionCard from './PredictionCard';
@@ -21,53 +21,11 @@ const generateRandomPoints = (centerLat, centerLng, radius, count, intensityModi
     return points;
 };
 
-// ✅ --- UPDATED MOCK DATA WITH REALISTIC STATE-WISE DISTRIBUTION ---
 const mockData = {
-    dengue: {
-        name: 'Dengue Fever',
-        color: 'blue',
-        icon: Bug,
-        mostAffected: 'Southern & Coastal States',
-        points: [
-            ...generateRandomPoints(10.0, 76.3, 100, 2200, 0.9), // Kerala (Kochi)
-            ...generateRandomPoints(18.5, 73.8, 120, 2800, 0.8), // Maharashtra (Pune)
-            ...generateRandomPoints(13.0, 80.2, 90, 2500, 0.8),  // Tamil Nadu (Chennai)
-        ]
-    },
-    influenza: {
-        name: 'Influenza',
-        color: 'orange',
-        icon: Wind,
-        mostAffected: 'Northern Indian Plains',
-        points: [
-            ...generateRandomPoints(28.6, 77.2, 150, 3000, 0.7), // Delhi NCR
-            ...generateRandomPoints(30.7, 76.7, 90, 2200, 0.6),  // Punjab/Haryana (Chandigarh)
-            ...generateRandomPoints(26.8, 80.9, 130, 2800, 0.5), // Uttar Pradesh (Lucknow)
-        ]
-    },
-    covid19: {
-        name: 'COVID-19',
-        color: 'red',
-        icon: Biohazard,
-        mostAffected: 'Major Metros Nationwide',
-        points: [
-            ...generateRandomPoints(28.6, 77.2, 80, 2500, 1.0),  // Delhi
-            ...generateRandomPoints(19.0, 72.8, 90, 2800, 0.9),  // Mumbai
-            ...generateRandomPoints(12.9, 77.5, 70, 2200, 0.8),  // Bengaluru
-            ...generateRandomPoints(22.5, 88.3, 75, 2000, 0.8),  // Kolkata
-        ]
-    },
-    malaria: {
-        name: 'Malaria',
-        color: 'teal',
-        icon: Droplets,
-        mostAffected: 'Eastern & Central States',
-        points: [
-            ...generateRandomPoints(20.2, 85.8, 150, 3200, 1.0), // Odisha (Bhubaneswar)
-            ...generateRandomPoints(21.2, 81.6, 160, 2800, 0.9), // Chhattisgarh (Raipur)
-            ...generateRandomPoints(23.3, 85.3, 140, 3000, 0.9), // Jharkhand (Ranchi)
-        ]
-    }
+    dengue: { name: 'Dengue Fever', color: 'blue', icon: Bug, mostAffected: 'Southern & Coastal States', points: [ ...generateRandomPoints(10.0, 76.3, 100, 2200, 0.9), ...generateRandomPoints(18.5, 73.8, 120, 2800, 0.8), ...generateRandomPoints(13.0, 80.2, 90, 2500, 0.8), ] },
+    influenza: { name: 'Influenza', color: 'orange', icon: Wind, mostAffected: 'Northern Indian Plains', points: [ ...generateRandomPoints(28.6, 77.2, 150, 3000, 0.7), ...generateRandomPoints(30.7, 76.7, 90, 2200, 0.6), ...generateRandomPoints(26.8, 80.9, 130, 2800, 0.5), ] },
+    covid19: { name: 'COVID-19', color: 'red', icon: Biohazard, mostAffected: 'Major Metros Nationwide', points: [ ...generateRandomPoints(28.6, 77.2, 80, 2500, 1.0), ...generateRandomPoints(19.0, 72.8, 90, 2800, 0.9), ...generateRandomPoints(12.9, 77.5, 70, 2200, 0.8), ...generateRandomPoints(22.5, 88.3, 75, 2000, 0.8), ] },
+    malaria: { name: 'Malaria', color: 'teal', icon: Droplets, mostAffected: 'Eastern & Central States', points: [ ...generateRandomPoints(20.2, 85.8, 150, 3200, 1.0), ...generateRandomPoints(21.2, 81.6, 160, 2800, 0.9), ...generateRandomPoints(23.3, 85.3, 140, 3000, 0.9), ] }
 };
 
 export default function NationalHealthPulse() {
@@ -80,19 +38,36 @@ export default function NationalHealthPulse() {
     const [predictions, setPredictions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // ✅ UPDATED: A useEffect hook JUST for creating the map once.
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            mapInstanceRef.current = L.map(mapContainerRef.current).setView([22.5937, 78.9629], 5);
+            const map = L.map(mapContainerRef.current).setView([22.5937, 78.9629], 5);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-            }).addTo(mapInstanceRef.current);
-        }
+            }).addTo(map);
+            mapInstanceRef.current = map;
 
-        const diseaseData = mockData[activeDisease];
-        if (diseaseData) {
-            if (!heatLayerRef.current) {
-                heatLayerRef.current = L.heatLayer(diseaseData.points, { radius: intensity, blur: blur, maxZoom: 12 }).addTo(mapInstanceRef.current);
-            } else {
+            // Dynamically import leaflet.heat AFTER the map is created.
+            import('leaflet.heat').then(() => {
+                const heatLayer = L.heatLayer([], { 
+                    radius: 25, 
+                    blur: 15, 
+                    maxZoom: 12 
+                }).addTo(map);
+                heatLayerRef.current = heatLayer;
+                // Set initial data after layer is created
+                if (mockData[activeDisease]) {
+                    heatLayer.setLatLngs(mockData[activeDisease].points);
+                }
+            });
+        }
+    }, [activeDisease]); // Dependency on activeDisease to set initial points correctly
+
+    // ✅ UPDATED: A separate useEffect hook for UPDATING the map when state changes.
+    useEffect(() => {
+        if (heatLayerRef.current) {
+            const diseaseData = mockData[activeDisease];
+            if (diseaseData) {
                 heatLayerRef.current.setLatLngs(diseaseData.points);
                 heatLayerRef.current.setOptions({ radius: intensity, blur: blur });
             }
@@ -175,7 +150,7 @@ export default function NationalHealthPulse() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Future Outbreak Forecasts</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">🔮 Future Outbreak Forecasts</h2>
                 {isLoading ? (
                     <div className="flex items-center justify-center p-8 text-slate-500">
                         <Loader2 className="animate-spin mr-3" />
