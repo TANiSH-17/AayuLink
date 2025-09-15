@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-// Note: We do not import 'leaflet.heat' here. It will be imported dynamically.
+// The 'import "leaflet.heat"' line is correctly REMOVED from here.
 import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import PredictionCard from './PredictionCard';
@@ -47,7 +47,7 @@ export default function NationalHealthPulse() {
             }).addTo(map);
             mapInstanceRef.current = map;
 
-            // Dynamically import leaflet.heat AFTER the map is created to prevent build errors.
+            // Dynamically import leaflet.heat AFTER the map is created.
             import('leaflet.heat').then(() => {
                 const heatLayer = L.heatLayer([], { 
                     radius: 25, 
@@ -61,7 +61,7 @@ export default function NationalHealthPulse() {
                 }
             });
         }
-    }, []); // Empty dependency array ensures this runs only once on mount.
+    }, []); // Empty dependency array ensures this runs only once.
 
     // This separate useEffect handles all UPDATES to the heat layer when state changes.
     useEffect(() => {
