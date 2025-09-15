@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat'; // ✅ important: lets Vite bundle the heatmap plugin
+// ✅ The problematic 'import "leaflet.heat"' line has been REMOVED.
 import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import PredictionCard from './PredictionCard';
@@ -22,65 +22,22 @@ const generateRandomPoints = (centerLat, centerLng, radius, count, intensityModi
 };
 
 const mockData = {
-    dengue: {
-        name: 'Dengue Fever',
-        color: 'blue',
-        icon: Bug,
-        mostAffected: 'Southern & Coastal States',
-        points: [
-            ...generateRandomPoints(10.0, 76.3, 100, 2200, 0.9),
-            ...generateRandomPoints(18.5, 73.8, 120, 2800, 0.8),
-            ...generateRandomPoints(13.0, 80.2, 90, 2500, 0.8),
-        ],
-    },
-    influenza: {
-        name: 'Influenza',
-        color: 'orange',
-        icon: Wind,
-        mostAffected: 'Northern Indian Plains',
-        points: [
-            ...generateRandomPoints(28.6, 77.2, 150, 3000, 0.7),
-            ...generateRandomPoints(30.7, 76.7, 90, 2200, 0.6),
-            ...generateRandomPoints(26.8, 80.9, 130, 2800, 0.5),
-        ],
-    },
-    covid19: {
-        name: 'COVID-19',
-        color: 'red',
-        icon: Biohazard,
-        mostAffected: 'Major Metros Nationwide',
-        points: [
-            ...generateRandomPoints(28.6, 77.2, 80, 2500, 1.0),
-            ...generateRandomPoints(19.0, 72.8, 90, 2800, 0.9),
-            ...generateRandomPoints(12.9, 77.5, 70, 2200, 0.8),
-            ...generateRandomPoints(22.5, 88.3, 75, 2000, 0.8),
-        ],
-    },
-    malaria: {
-        name: 'Malaria',
-        color: 'teal',
-        icon: Droplets,
-        mostAffected: 'Eastern & Central States',
-        points: [
-            ...generateRandomPoints(20.2, 85.8, 150, 3200, 1.0),
-            ...generateRandomPoints(21.2, 81.6, 160, 2800, 0.9),
-            ...generateRandomPoints(23.3, 85.3, 140, 3000, 0.9),
-        ],
-    },
+    dengue: { name: 'Dengue Fever', color: 'blue', icon: Bug, mostAffected: 'Southern & Coastal States', points: [ ...generateRandomPoints(10.0, 76.3, 100, 2200, 0.9), ...generateRandomPoints(18.5, 73.8, 120, 2800, 0.8), ...generateRandomPoints(13.0, 80.2, 90, 2500, 0.8), ] },
+    influenza: { name: 'Influenza', color: 'orange', icon: Wind, mostAffected: 'Northern Indian Plains', points: [ ...generateRandomPoints(28.6, 77.2, 150, 3000, 0.7), ...generateRandomPoints(30.7, 76.7, 90, 2200, 0.6), ...generateRandomPoints(26.8, 80.9, 130, 2800, 0.5), ] },
+    covid19: { name: 'COVID-19', color: 'red', icon: Biohazard, mostAffected: 'Major Metros Nationwide', points: [ ...generateRandomPoints(28.6, 77.2, 80, 2500, 1.0), ...generateRandomPoints(19.0, 72.8, 90, 2800, 0.9), ...generateRandomPoints(12.9, 77.5, 70, 2200, 0.8), ...generateRandomPoints(22.5, 88.3, 75, 2000, 0.8), ] },
+    malaria: { name: 'Malaria', color: 'teal', icon: Droplets, mostAffected: 'Eastern & Central States', points: [ ...generateRandomPoints(20.2, 85.8, 150, 3200, 1.0), ...generateRandomPoints(21.2, 81.6, 160, 2800, 0.9), ...generateRandomPoints(23.3, 85.3, 140, 3000, 0.9), ] }
 };
 
 export default function NationalHealthPulse() {
     const mapContainerRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const heatLayerRef = useRef(null);
-
     const [activeDisease, setActiveDisease] = useState('dengue');
     const [intensity, setIntensity] = useState(25);
     const [blur, setBlur] = useState(15);
     const [predictions, setPredictions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // --- Initialize map and heat layer once ---
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
             const map = L.map(mapContainerRef.current).setView([22.5937, 78.9629], 5);
@@ -88,36 +45,35 @@ export default function NationalHealthPulse() {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             }).addTo(map);
             mapInstanceRef.current = map;
-
-            const heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 12 }).addTo(map);
-            heatLayerRef.current = heatLayer;
-
-            if (mockData[activeDisease]) {
-                heatLayer.setLatLngs(mockData[activeDisease].points);
+            
+            // This relies on the script tag in index.html to have loaded L.heatLayer
+            if (L.heatLayer) {
+                const heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 12 }).addTo(map);
+                heatLayerRef.current = heatLayer;
+            } else {
+                console.error("Leaflet.heat plugin not loaded correctly.");
             }
         }
     }, []);
 
-    // --- Update heat layer when controls change ---
     useEffect(() => {
         if (heatLayerRef.current) {
             const diseaseData = mockData[activeDisease];
             if (diseaseData) {
                 heatLayerRef.current.setLatLngs(diseaseData.points);
-                heatLayerRef.current.setOptions({ radius: intensity, blur });
+                heatLayerRef.current.setOptions({ radius: intensity, blur: blur });
             }
         }
     }, [activeDisease, intensity, blur]);
-
-    // --- Fetch predictions for forecast cards ---
+    
     useEffect(() => {
         const fetchPredictions = async () => {
             setIsLoading(true);
             try {
                 const response = await axios.get(`${API_URL}/api/predictions`);
                 setPredictions(response.data);
-            } catch (err) {
-                console.error('Failed to fetch predictions:', err);
+            } catch (error) {
+                console.error("Failed to fetch predictions:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -137,14 +93,12 @@ export default function NationalHealthPulse() {
                 </p>
             </div>
 
-            {/* Map + Controls */}
             <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                     Live Outbreak Heatmap
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <aside className="lg:col-span-1 space-y-4">
-                        {/* Disease Selector */}
                         <div>
                             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
                                 Disease Selector
@@ -166,91 +120,50 @@ export default function NationalHealthPulse() {
                             </div>
                         </div>
 
-                        {/* Radius Control */}
                         <div>
-                            <label
-                                htmlFor="intensity"
-                                className="text-sm font-semibold text-slate-500 block uppercase tracking-wider"
-                            >
+                            <label htmlFor="intensity" className="text-sm font-semibold text-slate-500 block uppercase tracking-wider">
                                 Radius
                             </label>
-                            <input
-                                id="intensity"
-                                type="range"
-                                min="10"
-                                max="40"
-                                value={intensity}
-                                onChange={(e) => setIntensity(Number(e.target.value))}
-                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2"
-                            />
+                            <input id="intensity" type="range" min="10" max="40" value={intensity} onChange={(e) => setIntensity(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2" />
                         </div>
 
-                        {/* Blur Control */}
                         <div>
-                            <label
-                                htmlFor="blur"
-                                className="text-sm font-semibold text-slate-500 block uppercase tracking-wider"
-                            >
+                            <label htmlFor="blur" className="text-sm font-semibold text-slate-500 block uppercase tracking-wider">
                                 Blur
                             </label>
-                            <input
-                                id="blur"
-                                type="range"
-                                min="5"
-                                max="25"
-                                value={blur}
-                                onChange={(e) => setBlur(Number(e.target.value))}
-                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2"
-                            />
+                            <input id="blur" type="range" min="5" max="25" value={blur} onChange={(e) => setBlur(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2" />
                         </div>
 
-                        {/* Info Card */}
                         <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl mt-4">
                             <h3 className="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">
                                 Live Data Insights
                             </h3>
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4">
-                                    <div
-                                        className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${diseaseInfo.color}-100`}
-                                    >
-                                        <DiseaseIcon
-                                            size={28}
-                                            className={`text-${diseaseInfo.color}-600`}
-                                        />
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${diseaseInfo.color}-100`}>
+                                        <DiseaseIcon size={28} className={`text-${diseaseInfo.color}-600`} />
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500">Selected Outbreak</p>
-                                        <h4 className="text-lg font-bold text-slate-800">
-                                            {diseaseInfo.name}
-                                        </h4>
+                                        <h4 className="text-lg font-bold text-slate-800">{diseaseInfo.name}</h4>
                                     </div>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500">Total Reported Cases</p>
-                                    <p className="text-3xl font-extrabold text-slate-900">
-                                        {diseaseInfo.points.length.toLocaleString()}
-                                    </p>
+                                    <p className="text-3xl font-extrabold text-slate-900">{diseaseInfo.points.length.toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500">Most Affected Areas</p>
-                                    <p className="font-semibold text-slate-800">
-                                        {diseaseInfo.mostAffected}
-                                    </p>
+                                    <p className="font-semibold text-slate-800">{diseaseInfo.mostAffected}</p>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
-                    {/* Map Container */}
-                    <div
-                        ref={mapContainerRef}
-                        className="lg:col-span-2 min-h-[500px] w-full rounded-xl shadow-lg border border-slate-200 z-10"
-                    ></div>
+                    <div ref={mapContainerRef} className="lg:col-span-2 min-h-[500px] w-full rounded-xl shadow-lg border border-slate-200 z-10"></div>
                 </div>
             </div>
 
-            {/* Predictions Section */}
             <div>
                 <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                     🔮 Future Outbreak Forecasts
