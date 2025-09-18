@@ -26,7 +26,7 @@ const patientSchema = new mongoose.Schema({
   personalInfo: { type: personalInfoSchema, required: true },
   registeredAtHospital: { 
     type: String, 
-    required: true 
+    required: false 
   },
   allergies: [{ type: String }],
   chronicConditions: [{ type: String }],

@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { User, Shield, History, Search, LogOut } from 'lucide-react'; // ✅ 1. Import the LogOut icon
+import { User, Shield, History, Search, LogOut, PlusCircle } from 'lucide-react';
 import EmergencyDetailModal from './EmergencyDetailModal';
+import PatientRegistrationModal from './PatientRegistrationModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// ✅ 2. Accept the `onLogout` prop from MainApp.jsx
-export default function PatientLookupPage({ onPatientSelect, onLogout }) {
+// ✅ 1. Accept the `currentUser` prop to check the user's role
+export default function PatientLookupPage({ onPatientSelect, onLogout, showNotification, currentUser }) {
   const [abhaId, setAbhaId] = useState('');
   const [patient, setPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [emergencyData, setEmergencyData] = useState(null);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const handleLookup = async (e) => {
     e.preventDefault();
     if (!abhaId.trim()) return;
-    
     setIsLoading(true);
     setError('');
     setPatient(null);
-
     try {
       const response = await axios.post(`${API_URL}/api/patient-lookup`, { abhaId });
       setPatient({ abhaId, name: response.data.name });
@@ -47,10 +47,7 @@ export default function PatientLookupPage({ onPatientSelect, onLogout }) {
   };
 
   return (
-    // ✅ 3. Add `relative` to the main container for positioning
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4 relative">
-      
-      {/* ✅ 4. Add the Logout Button */}
       <button 
         onClick={onLogout}
         className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white text-slate-600 font-semibold rounded-full shadow-md hover:bg-slate-50 transition-colors z-10"
@@ -65,6 +62,7 @@ export default function PatientLookupPage({ onPatientSelect, onLogout }) {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 text-center">Patient Lookup</h1>
             <p className="text-center text-gray-600 mt-2">Enter an ABHA number to find a patient's record.</p>
+            
             <form onSubmit={handleLookup} className="mt-8 space-y-4">
               <div>
                 <label htmlFor="abhaId" className="text-sm font-semibold text-gray-700">ABHA Number</label>
@@ -90,27 +88,30 @@ export default function PatientLookupPage({ onPatientSelect, onLogout }) {
                 {isLoading ? 'Searching...' : <><Search className="h-5 w-5 mr-2"/>Find Patient</>}
               </button>
             </form>
+
+            {/* ✅ 2. Only show this button if the logged-in user's role is 'admin' */}
+            {currentUser?.role === 'admin' && (
+              <div className="text-center mt-6">
+                <button 
+                  onClick={() => setIsRegisterModalOpen(true)}
+                  className="inline-flex items-center gap-2 font-semibold text-green-700 hover:text-green-900 hover:underline transition-colors"
+                >
+                  <PlusCircle size={18} />
+                  Create a new ABHA ID for a patient
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center">
             <p className="text-gray-600">Patient Found:</p>
             <h2 className="text-4xl font-bold text-green-700 my-4">{patient.name}</h2>
             <p className="text-gray-500 text-sm mb-8">ABHA ID: {patient.abhaId}</p>
-            
             <div className="space-y-4">
-              <button 
-                onClick={() => onPatientSelect(patient.abhaId, 'history', patient.name)}
-                className="w-full flex items-center justify-center bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700"
-              >
-                <History className="h-5 w-5 mr-2"/>
-                Get Complete Medical History
+              <button onClick={() => onPatientSelect(patient.abhaId, 'history', patient.name)} className="w-full flex items-center justify-center bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">
+                <History className="h-5 w-5 mr-2"/> Get Complete Medical History
               </button>
-              
-              <button 
-                onClick={() => handleEmergencyLookup(patient.abhaId)}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-red-300"
-              >
+              <button onClick={() => handleEmergencyLookup(patient.abhaId)} disabled={isLoading} className="w-full flex items-center justify-center bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-red-300">
                 {isLoading ? 'Loading Details...' : <><Shield className="h-5 w-5 mr-2"/>Quick Details (Emergency Mode)</>}
               </button>
             </div>
@@ -127,6 +128,12 @@ export default function PatientLookupPage({ onPatientSelect, onLogout }) {
           onClose={() => setShowEmergencyModal(false)} 
         />
       )}
+      
+      <PatientRegistrationModal 
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onRegistrationSuccess={showNotification}
+      />
     </div>
   );
 }

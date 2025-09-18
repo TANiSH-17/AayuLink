@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
-// Your component imports
 import AarogyaLoader from './components/AarogyaLoader.jsx';
 import PatientLookupPage from './components/PatientLookupPage.jsx';
 import DashboardLayout from './components/Dashboard/DashboardLayout.jsx';
@@ -87,7 +86,12 @@ export default function MainApp({ currentUser, onLogout }) {
       {isAppVisible && (
         <>
         <Routes>
-          <Route path="/patientLookup" element={<PatientLookupPage onPatientSelect={handlePatientSelect} onLogout={onLogout} />} />
+          <Route path="/patientLookup" element={<PatientLookupPage onPatientSelect={handlePatientSelect} 
+          onLogout={onLogout} 
+          showNotification={showNotification}
+          currentUser={currentUser} 
+          />}  
+        />
           <Route path="/" element={<Navigate replace to="/patientLookup" />} />
           <Route path="/dashboard/:abhaId" element={<DashboardWrapper />} />
         </Routes>

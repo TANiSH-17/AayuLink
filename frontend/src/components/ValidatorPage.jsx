@@ -164,7 +164,7 @@ export default function ValidatorPage({ onBack }) {
             <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-3">
               <p><strong>Patient:</strong> {prescription.patientName}</p>
               <p><strong>Doctor:</strong> {prescription.doctorName}</p>
-              <p><strong>Status:</strong> <span className={`font-bold ${prescription.status === 'Fulfilled' ? 'text-red-600' : 'text-green-600'}`}>{prescription.status}</span></p>
+              <p><strong>Status:</strong> <span className={`font-bold ${prescription.status === 'Fulfilled' ? 'text-green-600' : 'text-red-600' }`}>{prescription.status}</span></p>
               <div>
                 <strong>Medications:</strong>
                 <ul className="list-disc list-inside ml-4">

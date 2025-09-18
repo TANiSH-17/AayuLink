@@ -5,21 +5,19 @@ import {
   Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext.jsx";
+import PatientRegistrationModal from './PatientRegistrationModal.jsx';
 
 /* ==========================================================================
    Reusable Field
    ========================================================================== */
+
 function Field({ name, label, type, placeholder, icon: Icon, value, onChange, required = false }) {
+  // ... (This component is correct and remains unchanged)
   return (
     <div>
       <label htmlFor={name} className="text-sm font-semibold text-foreground">{label}</label>
       <div className="relative mt-1">
-        <input
-          id={name} name={name} type={type}
-          value={value} onChange={onChange}
-          className="w-full p-3 pl-10 rounded-lg border border-input focus:ring-2 focus:ring-primary bg-card text-foreground"
-          placeholder={placeholder} required={required}
-        />
+        <input id={name} name={name} type={type} value={value} onChange={onChange} className="w-full p-3 pl-10 rounded-lg border border-input focus:ring-2 focus:ring-primary bg-card text-foreground" placeholder={placeholder} required={required} />
         <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
       </div>
     </div>
@@ -27,25 +25,17 @@ function Field({ name, label, type, placeholder, icon: Icon, value, onChange, re
 }
 
 /* ==========================================================================
-   Header
+   Header Component
    ========================================================================== */
-// ✅ The `onEmergencyLogin` prop is no longer needed and has been removed.
-function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel }) {
+function HeaderInline({ onValidatorClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setIsMenuOpen(false);
-  };
 
   const navLinks = [
     { id: 'features', label: 'Features' },
@@ -62,22 +52,15 @@ function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel }) {
           </a>
           <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
             {navLinks.map((link) => (
-              <button key={link.id} onClick={() => scrollToSection(link.id)} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
-                {link.label}
-              </button>
+              <a key={link.id} href={`#${link.id}`} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">{link.label}</a>
             ))}
-            <button onClick={onValidatorClick} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
-              Pharmacist / Lab Portal
-            </button>
+            <button onClick={onValidatorClick} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">Pharmacist / Lab Portal</button>
           </nav>
           <div className="hidden lg:flex items-center gap-4">
-            <a href="#auth" className="px-6 py-2.5 bg-destructive text-destructive-foreground rounded-full font-semibold hover:bg-destructive/90 transition-colors">
-              Emergency Login
-            </a>
+            <a href="#auth" className="px-6 py-2.5 bg-destructive text-destructive-foreground rounded-full font-semibold hover:bg-destructive/90 transition-colors">Emergency Login</a>
           </div>
           <div className="lg:hidden">
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-foreground">
-              {/* ✅ CORRECTED isMenu-open to isMenuOpen */}
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -86,35 +69,29 @@ function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel }) {
       <div className={`lg:hidden transition-all duration-300 ease-in-out bg-card/95 border-t border-border ${isMenuOpen ? 'max-h-screen py-6' : 'max-h-0'} overflow-hidden`}>
         <nav className="flex flex-col items-center gap-6">
           {navLinks.map((link) => (
-            <button key={link.id} onClick={() => scrollToSection(link.id)} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">{link.label}</button>
+            <a key={link.id} href={`#${link.id}`} onClick={() => setIsMenuOpen(false)} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">{link.label}</a>
           ))}
-          <button onClick={onValidatorClick} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">Pharmacist / Lab Portal</button>
-          <a 
-            href="#auth" 
-            onClick={() => setIsMenuOpen(false)} 
-            className="mt-4 px-8 py-3 bg-destructive text-destructive-foreground rounded-full font-semibold"
-          >
-            Emergency Login
-          </a>
+          <button onClick={() => { onValidatorClick(); setIsMenuOpen(false); }} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">Pharmacist / Lab Portal</button>
+          <a href="#auth" onClick={() => setIsMenuOpen(false)} className="mt-4 px-8 py-3 bg-destructive text-destructive-foreground rounded-full font-semibold">Emergency Login</a>
         </nav>
       </div>
     </header>
   );
 }
+
 /* ==========================================================================
-   Hero
+   Hero Component
    ========================================================================== */
-function HeroInline() {
+function HeroInline({ onGetStartedClick }) {
   return (
-    <section id="top" className="relative min-h-[70vh] md:min-h-screen flex justify-center overflow-hidden bg-gradient-to-br from-background via-primary/5 to-accent/5">
+    <section id="top" className="relative min-h-screen flex justify-center overflow-hidden bg-gradient-to-br from-background via-primary/5 to-accent/5">
       <div className="absolute inset-0 z-0 opacity-80">
         <div className="absolute -top-20 -left-20 w-96 h-96 bg-primary/15 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
         <div className="absolute -bottom-10 -right-10 w-[400px] h-[400px] bg-accent/15 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-green-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-4000" />
       </div>
-      <div className="max-w-7xl mx-auto px-8 pt-16 md:pt-24 relative z-10 text-center animate-fade-in">
+      <div className="max-w-7xl mx-auto px-8 pt-24 relative z-10 text-center">
         <div className="animate-slide-up mb-10" style={{ animationDelay: "0.1s" }}>
-          <img src="/images/aayulink-logo.png" alt="AayuLink Logo" className="w-4/5 md:w-1/2 mx-auto object-contain drop-shadow-lg animate-glow-light" />
+          <img src="/images/aayulink-logo.png" alt="AayuLink Logo" className="w-4/5 md:w-1/2 mx-auto object-contain drop-shadow-lg" />
         </div>
         <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tighter text-foreground animate-slide-up" style={{ animationDelay: "0.3s" }}>
           The <span className="text-accent">Aadhaar</span> for your <span className="text-primary">Health</span>
@@ -123,12 +100,12 @@ function HeroInline() {
           A unified digital front door for citizens, providers, and administrators—securely connecting hospitals, health IDs, and services across India.
         </p>
         <div className="flex flex-col sm:flex-row gap-6 justify-center animate-slide-up" style={{ animationDelay: "0.7s" }}>
-          <button onClick={() => document.getElementById("auth")?.scrollIntoView({ behavior: "smooth" })} className="px-12 py-4 text-lg font-semibold rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-primary to-accent text-white hover:shadow-primary/50">
+          <button onClick={onGetStartedClick} className="px-12 py-4 text-lg font-semibold rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-primary to-accent text-white hover:shadow-primary/50">
             Get Started
           </button>
-          <button onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })} className="px-12 py-4 text-lg font-semibold rounded-full border-2 border-primary/30 text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all duration-300 transform hover:scale-105 backdrop-blur-sm">
+          <a href="#about" className="px-12 py-4 text-lg font-semibold rounded-full border-2 border-primary/30 text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all duration-300 transform hover:scale-105 backdrop-blur-sm">
             Learn More
-          </button>
+          </a>
         </div>
       </div>
     </section>
@@ -484,32 +461,29 @@ function AboutSection() {
 /* ==========================================================================
    Final Page Export
    ========================================================================== */
-export default function LandingPage(props) {
-  const [isVisible, setIsVisible] = useState(false);
-  const { toggleLanguage, t } = useLanguage();
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 50);
-    return () => clearTimeout(timer);
-  }, []);
-  const { onLogin, onSignUp, authError, onValidatorClick } = props;
-
-  return (
-    <div className={`bg-background text-foreground transition-opacity duration-700 ease-in-out ${isVisible ? "opacity-100" : "opacity-0"}`} >
-      <HeaderInline
-        onValidatorClick={onValidatorClick}
-        onToggleLanguage={toggleLanguage}
-        langLabel={t.langButton}
-        onEmergencyLogin={() => document.getElementById("auth")?.scrollIntoView({ behavior: "smooth" })}
-      />
-      <main>
-        <HeroInline />
-        <WhatIsAayulinkInline />
-        <HealthcareChallengeInline />
-        <WhyChooseAayulinkInline />
-        <NetworkSectionInline />
-        <AboutSection />
-        <AuthPanelInline onLogin={onLogin} onSignUp={onSignUp} authError={authError} />
-      </main>
-    </div>
-  );
-}
+   export default function LandingPage(props) {
+    // ✅ No more modal state or props needed here
+    const { onLogin, onSignUp, authError, onValidatorClick } = props;
+  
+    return (
+      <div className="bg-background text-foreground">
+        <HeaderInline onValidatorClick={onValidatorClick} />
+        <main>
+          {/* ✅ The "Get Started" button now just scrolls to the auth section */}
+          <HeroInline onGetStartedClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })} />
+          
+          <WhatIsAayulinkInline />
+          <HealthcareChallengeInline />
+          <WhyChooseAayulinkInline />
+          <NetworkSectionInline />
+          <AboutSection />
+          <AuthPanelInline 
+            onLogin={onLogin} 
+            onSignUp={onSignUp} 
+            authError={authError} 
+          />
+        </main>
+        {/* ✅ The PatientRegistrationModal is no longer rendered here */}
+      </div>
+    );
+  }

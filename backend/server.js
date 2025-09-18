@@ -10,11 +10,12 @@ const translatorRoutes = require('./routes/translator');
 const prescriptionRoutes = require('./routes/prescription');
 const otpRoutes = require('./routes/otp');
 const predictionRoutes = require('./routes/predictions');
+const patientRoutes = require('./routes/patient'); // ✅ 1. Import the new patient route file
 const { runPredictionModel } = require('./services/predictionService');
 
 const app = express();
 
-// ✅ CORRECTED: Multiple origins must be in an array
+// Configure CORS to trust your frontend domains
 const corsOptions = {
   origin: [
     'https://sih-2025-pi-seven.vercel.app', // Your live Vercel URL
@@ -36,6 +37,7 @@ app.use('/uploads', express.static('uploads'));
 
 // --- Tell Express to Use the Routes ---
 app.use('/api/auth', authRoutes);
+app.use('/api/patient', patientRoutes); // ✅ 2. Use the new patient routes
 app.use('/api/translate', translatorRoutes);
 app.use('/api/prescription', prescriptionRoutes);
 app.use('/api/otp', otpRoutes);

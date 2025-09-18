@@ -4,6 +4,8 @@ import axios from 'axios';
 import { LanguageProvider } from './contexts/LanguageContext';
 import MainApp from './MainApp';
 import LandingPage from './components/LandingPage';
+import Notification from './components/Notification';
+import ValidatorPage from './components/ValidatorPage';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -11,10 +13,11 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authError, setAuthError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-
-  // ✅ The useNavigate hook is already here, we just need to use it
   const navigate = useNavigate();
+  const [notification, setNotification] = useState({ show: false, message: '' });
+  const [showValidator, setShowValidator] = useState(false);
 
+  // ✅ This useEffect hook MUST contain the logic to set isLoading to false
   useEffect(() => {
     const verifyUser = async () => {
       const token = localStorage.getItem('aayuLinkToken');
@@ -27,27 +30,35 @@ export default function App() {
           localStorage.removeItem('aayuLinkToken');
         }
       }
+      // This line tells the app to stop loading and render the content
       setIsLoading(false);
     };
     verifyUser();
   }, []);
 
+  const toggleValidator = () => setShowValidator(prev => !prev);
+
+  const showNotification = (message) => {
+    setNotification({ show: true, message });
+    setTimeout(() => {
+      setNotification({ show: false, message: '' });
+    }, 5000);
+  };
+  
   const handleLogin = async (username, password, role) => {
-    // ... (this function is correct)
     setAuthError('');
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, { username, password, role });
       localStorage.setItem('aayuLinkToken', response.data.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       setCurrentUser(response.data.user);
-      navigate('/');
+      navigate('/patientLookup');
     } catch (err) {
       setAuthError(err.response?.data?.message || 'Login failed.');
     }
   };
 
   const handleSignUp = async (username, password, role, hospitalName, specialCode) => {
-    // ... (this function is correct)
     setAuthError('');
     try {
       await axios.post(`${API_URL}/api/auth/register`, { username, password, role, hospitalName, specialCode });
@@ -58,12 +69,11 @@ export default function App() {
     }
   };
   
-  // ✅ UPDATE THIS FUNCTION
   const handleLogout = () => {
     localStorage.removeItem('aayuLinkToken');
     delete axios.defaults.headers.common['Authorization'];
     setCurrentUser(null);
-    navigate('/'); // ✅ ADD THIS LINE to redirect to the homepage
+    navigate('/');
   };
   
   if (isLoading) {
@@ -72,13 +82,30 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <Routes>
-        {currentUser ? (
-          <Route path="/*" element={<MainApp currentUser={currentUser} onLogout={handleLogout} />} />
-        ) : (
-          <Route path="/*" element={<LandingPage onLogin={handleLogin} onSignUp={handleSignUp} authError={authError} />} />
-        )}
-      </Routes>
+      <Notification show={notification.show} message={notification.message} />
+      
+      {showValidator ? (
+        <ValidatorPage onBack={toggleValidator} />
+      ) : (
+        <Routes>
+          {currentUser ? (
+            <Route path="/*" element={<MainApp currentUser={currentUser} onLogout={handleLogout} showNotification={showNotification} />} />
+          ) : (
+            <Route 
+              path="/*" 
+              element={
+                <LandingPage 
+                  onLogin={handleLogin} 
+                  onSignUp={handleSignUp} 
+                  authError={authError}
+                  showNotification={showNotification}
+                  onValidatorClick={toggleValidator} 
+                />
+              } 
+            />
+          )}
+        </Routes>
+      )}
     </LanguageProvider>
   );
 }
