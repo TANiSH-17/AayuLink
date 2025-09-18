@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config(); // ✅ CORRECTED THIS LINE
+require('dotenv').config();
 
 // --- Import ALL Route Files ---
 const apiRoutes = require('./routes/api');
@@ -13,7 +13,18 @@ const predictionRoutes = require('./routes/predictions');
 const { runPredictionModel } = require('./services/predictionService');
 
 const app = express();
-app.use(cors());
+
+// ✅ CORRECTED: Multiple origins must be in an array
+const corsOptions = {
+  origin: [
+    'https://sih-2025-pi-seven.vercel.app', // Your live Vercel URL
+    'http://localhost:5173'                 // Your local development URL
+  ],
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+
 app.use(express.json());
 
 app.use((req, res, next) => {
