@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ✅ ADD THIS RULE FOR SMOOTH SCROLLING */
+html {
+  scroll-behavior: smooth;
+}
+
 /* ==========================================================================
    Light Mode Theme (Default)
    ========================================================================== */

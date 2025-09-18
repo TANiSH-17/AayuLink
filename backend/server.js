@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // ✅ CORRECTED THIS LINE
 
 // --- Import ALL Route Files ---
 const apiRoutes = require('./routes/api');
@@ -9,7 +9,7 @@ const authRoutes = require('./routes/auth');
 const translatorRoutes = require('./routes/translator');
 const prescriptionRoutes = require('./routes/prescription');
 const otpRoutes = require('./routes/otp');
-const predictionRoutes = require('./routes/predictions'); // ✅ 1. IMPORT THE NEW ROUTE
+const predictionRoutes = require('./routes/predictions');
 const { runPredictionModel } = require('./services/predictionService');
 
 const app = express();
@@ -28,7 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/translate', translatorRoutes);
 app.use('/api/prescription', prescriptionRoutes);
 app.use('/api/otp', otpRoutes);
-app.use('/api/predictions', predictionRoutes); // ✅ 2. USE THE NEW ROUTE
+app.use('/api/predictions', predictionRoutes);
 app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
@@ -46,7 +46,7 @@ mongoose.connect(process.env.MONGO_URI)
       
       // --- START THE PREDICTION SERVICE ---
       runPredictionModel();
-      setInterval(runPredictionModel, 3600000);
+      setInterval(runPredictionModel, 3600000); // Runs every hour
     });
   })
   .catch(err => {

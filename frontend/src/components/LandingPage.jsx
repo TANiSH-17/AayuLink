@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
-  User, Shield, Building, Hospital as HospitalIcon, Globe, MapPin,
+  User, Shield, Building, Hospital as HospitalIcon,
   AlertCircle, CheckCircle, FileText, Clock, AlertTriangle, Zap,
-  Heart, CreditCard, Smartphone, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X
+  Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X
 } from "lucide-react";
-import LeafletMap from "./LeafletMap.jsx";
 import { useLanguage } from "../contexts/LanguageContext.jsx";
 
 /* ==========================================================================
@@ -30,7 +29,8 @@ function Field({ name, label, type, placeholder, icon: Icon, value, onChange, re
 /* ==========================================================================
    Header
    ========================================================================== */
-function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel, onEmergencyLogin }) {
+// ✅ The `onEmergencyLogin` prop is no longer needed and has been removed.
+function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -71,13 +71,13 @@ function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel, onEmergen
             </button>
           </nav>
           <div className="hidden lg:flex items-center gap-4">
-            {/* <button onClick={onToggleLanguage} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">{langLabel}</button> */}
-            <button onClick={onEmergencyLogin} className="px-6 py-2.5 bg-destructive text-destructive-foreground rounded-full font-semibold hover:bg-destructive/90 transition-colors">
+            <a href="#auth" className="px-6 py-2.5 bg-destructive text-destructive-foreground rounded-full font-semibold hover:bg-destructive/90 transition-colors">
               Emergency Login
-            </button>
+            </a>
           </div>
           <div className="lg:hidden">
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-foreground">
+              {/* ✅ CORRECTED isMenu-open to isMenuOpen */}
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -89,16 +89,18 @@ function HeaderInline({ onValidatorClick, onToggleLanguage, langLabel, onEmergen
             <button key={link.id} onClick={() => scrollToSection(link.id)} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">{link.label}</button>
           ))}
           <button onClick={onValidatorClick} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">Pharmacist / Lab Portal</button>
-          {/* <button onClick={onToggleLanguage} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">{langLabel}</button> */}
-          <button onClick={onEmergencyLogin} className="mt-4 px-8 py-3 bg-destructive text-destructive-foreground rounded-full font-semibold">
+          <a 
+            href="#auth" 
+            onClick={() => setIsMenuOpen(false)} 
+            className="mt-4 px-8 py-3 bg-destructive text-destructive-foreground rounded-full font-semibold"
+          >
             Emergency Login
-          </button>
+          </a>
         </nav>
       </div>
     </header>
   );
 }
-
 /* ==========================================================================
    Hero
    ========================================================================== */
@@ -228,13 +230,9 @@ function HealthcareChallengeInline() {
 /* ==========================================================================
    Why Choose AyuLink
    ========================================================================== */
-
-  /* ==========================================================================
-   Why Choose AyuLink (with Enhanced Zoom Effect)
-   ========================================================================== */
 function WhyChooseAayulinkInline() {
   const stats = [ { icon: Heart, number: "500+", label: "Connected Hospitals", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, number: "99.9%", label: "Uptime Guarantee", color: "text-green-600", bg: "bg-green-50" }, { icon: Shield, number: "10M+", label: "Records Secured", color: "text-purple-600", bg: "bg-purple-50" }, { icon: Clock, number: "<3s", label: "Average Access Time", color: "text-orange-600", bg: "bg-orange-50" },];
-  const features = [ { icon: Shield, title: "Bank-Level Security", description: "Military-grade encryption with HIPAA compliance for complete data protection.", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, title: "Lightning Fast", description: "Access complete medical history in under 3 seconds during emergencies.", color: "text-yellow-600", bg: "bg-yellow-50" }, { icon: Smartphone, title: "Always Available", description: "24/7 mobile access with biometric authentication and offline capabilities.", color: "text-green-600", bg: "bg-green-50" },];
+  const features = [ { icon: Shield, title: "Bank-Level Security", description: "Military-grade encryption with HIPAA compliance for complete data protection.", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, title: "Lightning Fast", description: "Access complete medical history in under 3 seconds during emergencies.", color: "text-yellow-600", bg: "bg-yellow-50" }, { icon: User, title: "Always Available", description: "24/7 mobile access with biometric authentication and offline capabilities.", color: "text-green-600", bg: "bg-green-50" },];
   
   return (
     <section className="py-24 bg-background-gradient">
@@ -248,7 +246,6 @@ function WhyChooseAayulinkInline() {
           {stats.map((s, i) => {
             const IconComp = s.icon;
             return (
-              // ✅ ZOOM EFFECT IMPROVED: Changed scale-105 to scale-110 and slowed duration to 500ms
               <div key={i} className="bg-card p-8 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className={`${s.bg} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4`}><IconComp className={`w-8 h-8 ${s.color}`} /></div>
                 <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{s.number}</div>
@@ -262,7 +259,6 @@ function WhyChooseAayulinkInline() {
           {features.map((f, i) => {
             const IconComp = f.icon;
             return (
-              // ✅ ZOOM EFFECT IMPROVED: Changed scale-105 to scale-110 and slowed duration to 500ms
               <div key={i} className="bg-card p-10 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out group animate-slide-up" style={{ animationDelay: `${i * 0.2 + 0.4}s` }}>
                 <div className={`${f.bg} w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <IconComp className={`w-10 h-10 ${f.color}`} />
@@ -277,6 +273,7 @@ function WhyChooseAayulinkInline() {
     </section>
   );
 }
+
 /* ==========================================================================
    Improved Network Section
    ========================================================================== */
@@ -328,7 +325,6 @@ function NetworkSectionInline() {
               <select id="city-filter" value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full p-3 rounded-lg border border-input bg-card text-foreground appearance-none pr-10">
                 {cities.map(city => <option key={city} value={city}>{city}</option>)}
               </select>
-              <MapPin className="w-5 h-5 text-muted-foreground absolute right-3 top-[37px] pointer-events-none" />
             </div>
             <div className="space-y-3 h-[320px] overflow-y-auto pr-2">
               {filteredHospitals.length > 0 ? (
@@ -381,42 +377,82 @@ function AboutSection() {
     </section>
   );
 }
-
 /* ==========================================================================
-   Redesigned Centered Auth Panel
+   Redesigned Centered Auth Panel - CORRECTED
    ========================================================================== */
-function AuthPanelInline({ onLogin, onSignUp, authError }) {
-    const { t } = useLanguage();
+   // This component should be inside your LandingPage.jsx file
+
+   function AuthPanelInline({ onLogin, onSignUp, authError }) {
+    const { t } = useLanguage(); 
     const [role, setRole] = useState("individual");
     const [mode, setMode] = useState("login");
     const [formData, setFormData] = useState({ username: "", password: "", confirmPassword: "", hospitalName: "", specialCode: "" });
     const [isLoading, setIsLoading] = useState(false);
     const [formError, setFormError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+
     const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
     const handleSubmit = async (e) => {
       e.preventDefault();
       setIsLoading(true);
       setFormError(""); 
-      if (mode === "signup" && formData.password !== formData.confirmPassword) {
-        setFormError("Passwords do not match. Please try again.");
+      setSuccessMessage("");
+
+      if (mode === "signup") {
+        if (formData.password !== formData.confirmPassword) {
+          setFormError("Passwords do not match. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+        
+        const isSuccess = await onSignUp(formData.username, formData.password, role, formData.hospitalName, formData.specialCode);
+        
+        if (isSuccess) {
+          setSuccessMessage("Registration successful! Redirecting to login...");
+          setTimeout(() => {
+            setMode("login");
+            setSuccessMessage("");
+            setFormData({ ...formData, password: '', confirmPassword: '' });
+            setIsLoading(false); 
+          }, 2000);
+        } else {
+          setIsLoading(false); 
+        }
+      } else { 
+        await onLogin(formData.username, formData.password, role);
         setIsLoading(false);
-        return;
       }
-      await (mode === "login" ? onLogin(formData.username, formData.password, role) : onSignUp(formData.username, formData.password, role, formData.hospitalName, formData.specialCode));
-      setIsLoading(false);
     };
+
+    const cleanUpState = () => {
+        setFormError("");
+        setSuccessMessage("");
+    };
+
     return (
-      <section id="auth" className="py-24 bg-background-gradient">
+      <section id="auth" className="py-24 bg-gray-50">
         <div className="max-w-xl mx-auto px-6 text-center">
           <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            <span className="text-primary">{t.oneNationOneHealth.split(", ")[0]},</span>{" "}
+            <span className="text-green-600">{t.oneNationOneHealth.split(", ")[0]},</span>{" "}
             {t.oneNationOneHealth.split(", ")[1]}
           </h2>
-          <p className="text-muted-foreground leading-relaxed max-w-prose mx-auto mb-10">{t.tagline}</p>
-          <div className="bg-card p-6 rounded-2xl shadow-card border text-left">
-            <div className="flex bg-secondary rounded-lg p-1 mb-6">
-              <button onClick={() => { setRole("individual"); setFormError(""); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === "individual" ? "bg-background shadow" : "text-muted-foreground"}`}>{t.individual}</button>
-              <button onClick={() => { setRole("admin"); setFormError(""); }} className={`w-1/2 p-2 rounded-md font-semibold text-sm transition-colors ${role === "admin" ? "bg-background shadow" : "text-muted-foreground"}`}>{t.admin}</button>
+          <p className="text-gray-500 leading-relaxed max-w-prose mx-auto mb-10">{t.tagline}</p>
+          <div className="bg-white p-6 rounded-2xl shadow-lg border text-left">
+            {/* ✅ This section has been updated */}
+            <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+              <button 
+                onClick={() => { setRole("individual"); cleanUpState(); }} 
+                className={`flex-1 text-center p-2 rounded-md font-semibold text-sm transition-colors ${role === "individual" ? "bg-white shadow" : "text-gray-500"}`}
+              >
+                {t.individual}
+              </button>
+              <button 
+                onClick={() => { setRole("admin"); cleanUpState(); }} 
+                className={`flex-1 text-center p-2 rounded-md font-semibold text-sm transition-colors ${role === "admin" ? "bg-white shadow" : "text-gray-500"}`}
+              >
+                {t.admin}
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Field name="username" label="Username" type="text" placeholder="Enter your username" icon={User} value={formData.username} onChange={handleInputChange} required />
@@ -430,21 +466,21 @@ function AuthPanelInline({ onLogin, onSignUp, authError }) {
                   <Field name="specialCode" label="Special Hospital Code" type="text" placeholder="e.g., APOLLO-MUM-01" icon={Building} value={formData.specialCode} onChange={handleInputChange} required />
                 </>
               )}
-              {(authError || formError) && <p className="text-sm text-red-600 text-center">{authError || formError}</p>}
-              <button type="submit" disabled={isLoading} className="w-full rounded-lg font-bold py-3 px-4 bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors">
+              {successMessage && <p className="text-sm text-green-600 text-center pt-2">{successMessage}</p>}
+              {(authError || formError) && <p className="text-sm text-red-600 text-center pt-2">{authError || formError}</p>}
+              <button type="submit" disabled={isLoading} className="w-full rounded-lg font-bold py-3 px-4 bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors mt-4">
                 {isLoading ? "Processing..." : (mode === "login" ? "Login" : "Sign Up")}
               </button>
             </form>
-            <p className="text-xs text-muted-foreground text-center mt-4">
+            <p className="text-xs text-gray-500 text-center mt-4">
               {mode === "login" ? "Don't have an account?" : "Already have an account?"}
-              <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setFormError(""); }} className="font-semibold text-primary hover:underline ml-1">{mode === "login" ? "Sign Up" : "Login"}</button>
+              <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); cleanUpState(); }} className="font-semibold text-green-600 hover:underline ml-1">{mode === "login" ? "Sign Up" : "Login"}</button>
             </p>
           </div>
         </div>
       </section>
     );
 }
-
 /* ==========================================================================
    Final Page Export
    ========================================================================== */

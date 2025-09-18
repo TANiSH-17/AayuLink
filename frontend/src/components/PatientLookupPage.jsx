@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { User, Shield, History, Search } from 'lucide-react';
+import { User, Shield, History, Search, LogOut } from 'lucide-react'; // ✅ 1. Import the LogOut icon
 import EmergencyDetailModal from './EmergencyDetailModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export default function PatientLookupPage({ onPatientSelect }) {
+// ✅ 2. Accept the `onLogout` prop from MainApp.jsx
+export default function PatientLookupPage({ onPatientSelect, onLogout }) {
   const [abhaId, setAbhaId] = useState('');
   const [patient, setPatient] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -13,7 +14,6 @@ export default function PatientLookupPage({ onPatientSelect }) {
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [emergencyData, setEmergencyData] = useState(null);
 
-  // This function correctly looks up the patient's basic info first.
   const handleLookup = async (e) => {
     e.preventDefault();
     if (!abhaId.trim()) return;
@@ -28,19 +28,17 @@ export default function PatientLookupPage({ onPatientSelect }) {
     } catch (err) {
       setError(err.response?.data?.error || 'Could not find patient with that ABHA ID.');
     } finally {
-      // The finally block correctly ensures the loading state is always reset.
       setIsLoading(false);
     }
   };
 
-  // This function correctly fetches the full patient record for the emergency modal.
   const handleEmergencyLookup = async (id) => {
     setIsLoading(true);
     setError('');
     try {
         const response = await axios.post(`${API_URL}/api/fetch-records`, { abhaId: id });
         setEmergencyData(response.data);
-        setShowEmergencyModal(true); // Opens the modal with the fetched data.
+        setShowEmergencyModal(true);
     } catch (err) {
         setError("Could not fetch the patient's emergency details.");
     } finally {
@@ -49,11 +47,21 @@ export default function PatientLookupPage({ onPatientSelect }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4">
+    // ✅ 3. Add `relative` to the main container for positioning
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center p-4 relative">
+      
+      {/* ✅ 4. Add the Logout Button */}
+      <button 
+        onClick={onLogout}
+        className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white text-slate-600 font-semibold rounded-full shadow-md hover:bg-slate-50 transition-colors z-10"
+      >
+        <LogOut className="h-4 w-4" />
+        <span>Logout</span>
+      </button>
+
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 space-y-6">
         
         {!patient ? (
-          // --- STAGE 1: ABHA Input Form ---
           <div>
             <h1 className="text-3xl font-bold text-gray-900 text-center">Patient Lookup</h1>
             <p className="text-center text-gray-600 mt-2">Enter an ABHA number to find a patient's record.</p>
@@ -84,7 +92,6 @@ export default function PatientLookupPage({ onPatientSelect }) {
             </form>
           </div>
         ) : (
-          // --- STAGE 2: Action Selection ---
           <div className="text-center">
             <p className="text-gray-600">Patient Found:</p>
             <h2 className="text-4xl font-bold text-green-700 my-4">{patient.name}</h2>
@@ -114,7 +121,6 @@ export default function PatientLookupPage({ onPatientSelect }) {
         )}
       </div>
 
-      {/* The modal is correctly rendered conditionally. */}
       {showEmergencyModal && (
         <EmergencyDetailModal 
           patientData={emergencyData} 
