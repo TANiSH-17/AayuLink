@@ -2,67 +2,101 @@ const axios = require('axios');
 const Prediction = require('../models/Prediction');
 const MedicalRecord = require('../models/medicalRecord');
 
-// IMPORTANT: Sign up for a FREE API key at https://openweathermap.org/
 const WEATHER_API_KEY = process.env.OPENWEATHER_API_KEY; 
 
-// A simple rule-based AI to generate predictions
+// This function contains the core logic for a single prediction
 async function generatePrediction(disease, location, lat, lon) {
   try {
-    // 1. Fetch live weather data for the location
+    // 1. Fetch live weather data
     const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`);
-    const humidity = weatherResponse.data.main.humidity; // e.g., 85
-    const temp = weatherResponse.data.main.temp;         // e.g., 29.5
+    const { temp, humidity } = weatherResponse.data.main;
+    const windSpeed = weatherResponse.data.wind.speed;
 
-    // 2. Simulate fetching and analyzing internal health data
-    // In a real system, this would be a complex database query. We'll simulate it.
+    // 2. Simulate internal data analysis
+    const searchRegex = new RegExp(disease.split(' ')[0], 'i');
     const recentSymptomCount = await MedicalRecord.countDocuments({
-        details: { $regex: /fever|dengue/i }, // A simple search for keywords
-        createdAt: { $gte: new Date(new Date() - 7 * 24 * 60 * 60 * 1000) } // in the last 7 days
+        details: { $regex: searchRegex },
+        date: { $gte: new Date(new Date() - 14 * 24 * 60 * 60 * 1000) } // Check last 14 days
     });
-    const symptomSpike = recentSymptomCount > 10; // Simple threshold for spike
+    const symptomSpike = recentSymptomCount > 5; // A lower threshold for more sensitivity
 
-    // 3. The "AI" Logic: A simple but effective rule set
-    let riskLevel = 'Low';
-    let reasoning = `Normal environmental and symptom levels. Current Temp: ${temp}°C, Humidity: ${humidity}%.`;
+    // 3. The "AI" Logic: Rules are now specific to each disease
+    let riskLevel = 'Low Risk';
+    let reasoning = `Normal environmental and symptom levels. Current Temp: ${temp.toFixed(1)}°C, Humidity: ${humidity}%.`;
 
-    if (disease === 'Dengue' && humidity > 75 && temp > 28 && symptomSpike) {
-        riskLevel = 'High';
-        reasoning = `High Risk detected due to a combination of factors: high humidity (${humidity}%), warm temperatures (${temp}°C), and a recent spike in reported fever symptoms.`;
-    } else if (disease === 'Dengue' && humidity > 70) {
-        riskLevel = 'Medium';
-        reasoning = `Elevated risk detected. Conditions are favorable for mosquito breeding with high humidity (${humidity}%).`;
+    // Dengue & Malaria (Mosquito-borne)
+    if ((disease === 'Dengue' || disease === 'Malaria') && humidity > 70 && temp > 25) {
+        riskLevel = 'Medium Risk';
+        reasoning = `Elevated risk detected. Conditions are favorable for mosquito breeding with high humidity (${humidity}%) and warm temperatures (${temp.toFixed(1)}°C).`;
+        if (symptomSpike) {
+            riskLevel = 'High Risk';
+            reasoning += ` A recent spike in related symptoms significantly increases the outbreak probability.`;
+        }
+    }
+
+    // Influenza (Flu - Airborne)
+    if (disease === 'Influenza' && temp < 20 && humidity < 50) {
+        riskLevel = 'Medium Risk';
+        reasoning = `Elevated risk detected. Cool and dry conditions (Temp: ${temp.toFixed(1)}°C, Humidity: ${humidity}%) are ideal for influenza virus transmission.`;
+        if (symptomSpike) {
+            riskLevel = 'High Risk';
+            reasoning += ` Combined with a recent spike in symptoms, the risk of an outbreak is high.`;
+        }
     }
 
     // 4. Create or update the prediction in the database
     const predictionDate = new Date();
-    predictionDate.setDate(predictionDate.getDate() + 7); // Predict 7 days into the future
+    predictionDate.setDate(predictionDate.getDate() + 14); // Predict 2 weeks into the future
+
+    const predictedSpike = predictionDate.toLocaleString('en-US', { month: 'long', day: 'numeric' });
 
     const prediction = await Prediction.findOneAndUpdate(
-        { disease, location, predictedDate: { $gte: new Date() } }, // Find an existing prediction for today or future
+        { disease, location }, // Find by disease and location
         {
             riskLevel,
             reasoning,
-            predictedDate: predictionDate,
+            predictedSpike,
             generatedAt: new Date()
         },
-        { upsert: true, new: true } // `upsert: true` creates a new one if none is found
+        { upsert: true, new: true }
     );
 
     console.log(`[Prediction Service] Generated forecast for ${disease} in ${location}: ${riskLevel}`);
     return prediction;
 
   } catch (error) {
-    console.error(`[Prediction Service] Failed to generate prediction for ${location}:`, error.message);
+    // Check for 401 error from weather API (common if key is invalid)
+    if (error.response && error.response.status === 401) {
+        console.error(`[Prediction Service] Failed for ${location}: Invalid OpenWeather API key.`);
+    } else {
+        console.error(`[Prediction Service] Failed for ${location}:`, error.message);
+    }
   }
 }
 
-// Function to run the prediction model for multiple cities
+// This function runs the model for all relevant diseases and cities
 async function runPredictionModel() {
-    console.log('[Prediction Service] Running hourly prediction model...');
-    // In a real app, you'd have a list of cities from a database
-    await generatePrediction('Dengue', 'New Delhi, IN', 28.6139, 77.2090);
-    await generatePrediction('Dengue', 'Mumbai, IN', 19.0760, 72.8777);
-    await generatePrediction('Dengue', 'Chennai, IN', 13.0827, 80.2707);
+    console.log('[Prediction Service] Running prediction model...');
+    
+    // Define the list of diseases and cities to monitor
+    const locations = [
+        { name: 'New Delhi, IN', lat: 28.61, lon: 77.20 },
+        { name: 'Mumbai, IN', lat: 19.07, lon: 72.87 },
+        { name: 'Chennai, IN', lat: 13.08, lon: 80.27 },
+        { name: 'Kolkata, WB', lat: 22.57, lon: 88.36 },
+        { name: 'Bengaluru, KA', lat: 12.97, lon: 77.59 },
+    ];
+    const diseases = ['Dengue', 'Influenza', 'Malaria'];
+
+    // Use Promise.all to run predictions concurrently for efficiency
+    const predictionPromises = [];
+    for (const loc of locations) {
+        for (const disease of diseases) {
+            predictionPromises.push(generatePrediction(disease, loc.name, loc.lat, loc.lon));
+        }
+    }
+    await Promise.all(predictionPromises);
+    console.log('[Prediction Service] Prediction model run complete.');
 }
 
 module.exports = { runPredictionModel };

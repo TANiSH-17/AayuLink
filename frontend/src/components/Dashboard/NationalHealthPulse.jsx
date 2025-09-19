@@ -1,133 +1,257 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import HeatMap from '@uiw/react-heat-map'; // ✅ NEW: Import the new heatmap component
-import { Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import { Bot, Bug, Wind, Biohazard, Droplets, Loader2 } from 'lucide-react';
+import CustomHeatmapLayer from './CustomHeatmapLayer.jsx';
 import PredictionCard from './PredictionCard';
+import 'leaflet/dist/leaflet.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// --- MOCK DATA FOR HEATMAP ---
-const generateHeatMapData = (count, max) => {
-  const data = [];
-  for (let i = 0; i < count; i++) {
-    data.push({
-      date: `2025/${Math.floor(Math.random() * 12) + 1}/${Math.floor(Math.random() * 28) + 1}`,
-      count: Math.floor(Math.random() * max),
+// -------- Mock data generator --------
+const generateGeographicalData = (maxCases) => {
+  const cities = [
+    { name: 'Delhi', lat: 28.70, lng: 77.10 },
+    { name: 'Mumbai', lat: 19.07, lng: 72.87 },
+    { name: 'Kolkata', lat: 22.57, lng: 88.36 },
+    { name: 'Chennai', lat: 13.08, lng: 80.27 },
+    { name: 'Bengaluru', lat: 12.97, lng: 77.59 },
+    { name: 'Hyderabad', lat: 17.38, lng: 78.48 },
+    { name: 'Pune', lat: 18.52, lng: 73.85 },
+    { name: 'Jaipur', lat: 26.91, lng: 75.78 },
+  ];
+  const points = [];
+  for (let i = 0; i < 200; i++) {
+    const city = cities[Math.floor(Math.random() * cities.length)];
+    points.push({
+      lat: city.lat + (Math.random() - 0.5) * 3,
+      lng: city.lng + (Math.random() - 0.5) * 3,
+      intensity: Math.random() * maxCases,
     });
   }
-  return data;
+  return points;
 };
 
-const mockData = {
-    dengue: { name: 'Dengue Fever', color: 'blue', icon: Bug, mostAffected: 'Southern & Coastal States', data: generateHeatMapData(200, 150) },
-    influenza: { name: 'Influenza', color: 'orange', icon: Wind, mostAffected: 'Northern Indian Plains', data: generateHeatMapData(200, 120) },
-    covid19: { name: 'COVID-19', color: 'red', icon: Biohazard, mostAffected: 'Major Metros Nationwide', data: generateHeatMapData(200, 250) },
-    malaria: { name: 'Malaria', color: 'teal', icon: Droplets, mostAffected: 'Eastern & Central States', data: generateHeatMapData(200, 180) }
+const mockGeographicalData = {
+  dengue: {
+    name: 'Dengue Fever',
+    color: 'bg-blue-500',
+    icon: Bug,
+    data: generateGeographicalData(150),
+    totalCases: 9500,
+    mostAffected: 'Southern & Coastal States',
+  },
+  influenza: {
+    name: 'Influenza',
+    color: 'bg-orange-500',
+    icon: Wind,
+    data: generateGeographicalData(120),
+    totalCases: 7200,
+    mostAffected: 'Northern Indian Plains',
+  },
+  covid19: {
+    name: 'COVID-19',
+    color: 'bg-red-500',
+    icon: Biohazard,
+    data: generateGeographicalData(250),
+    totalCases: 18740,
+    mostAffected: 'Major Metros Nationwide',
+  },
+  malaria: {
+    name: 'Malaria',
+    color: 'bg-teal-500',
+    icon: Droplets,
+    data: generateGeographicalData(180),
+    totalCases: 5400,
+    mostAffected: 'Eastern & Central States',
+  },
 };
 
 export default function NationalHealthPulse() {
-    const [activeDisease, setActiveDisease] = useState('dengue');
-    const [predictions, setPredictions] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const [activeDisease, setActiveDisease] = useState('covid19');
+  const [predictions, setPredictions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [heatmapRadius, setHeatmapRadius] = useState(35);
+  const [heatmapBlur, setHeatmapBlur] = useState(25);
 
-    useEffect(() => {
-        const fetchPredictions = async () => {
-            setIsLoading(true);
-            try {
-                const response = await axios.get(`${API_URL}/api/predictions`);
-                setPredictions(response.data);
-            } catch (err) {
-                console.error('Failed to fetch predictions:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchPredictions();
-    }, []);
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`${API_URL}/api/predictions`);
+        setPredictions(response.data);
+      } catch (err) {
+        console.error('Failed to fetch predictions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPredictions();
+  }, []);
 
-    const diseaseInfo = mockData[activeDisease];
-    const DiseaseIcon = diseaseInfo.icon;
-    const totalCases = diseaseInfo.data.reduce((sum, item) => sum + item.count, 0);
+  const diseaseInfo = mockGeographicalData[activeDisease];
+  const DiseaseIcon = diseaseInfo.icon;
 
-    return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">National Health Pulse</h1>
-                <p className="text-gray-600 mt-1">Live infectious disease tracking and outbreak forecasting.</p>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">National Health Pulse</h1>
+        <p className="text-gray-500 mt-1">
+          Live infectious disease tracking & AI-powered outbreak forecasting across India.
+        </p>
+      </div>
+
+      {/* Two-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Disease Selector */}
+          <div className="bg-white p-5 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Disease Selector
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.keys(mockGeographicalData).map((key) => {
+                const Icon = mockGeographicalData[key].icon; // ✅ Extract component
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveDisease(key)}
+                    className={`px-3 py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2 ${
+                      activeDisease === key
+                        ? 'bg-blue-500 text-white shadow'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Icon size={16} /> {/* ✅ Correct JSX */}
+                    {mockGeographicalData[key].name}
+                  </button>
+                );
+              })}
             </div>
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 uppercase tracking-wider">Live Outbreak Calendar</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <aside className="lg:col-span-1 space-y-4">
-                        <div>
-                            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Disease Selector</h3>
-                            <div className="grid grid-cols-2 gap-3 mt-2">
-                               {Object.keys(mockData).map(key => (
-                                    <button key={key} onClick={() => setActiveDisease(key)}
-                                        className={`p-3 text-sm font-bold rounded-lg shadow-sm transition-all duration-200 border-2 flex items-center justify-center ${
-                                            activeDisease === key
-                                                ? `bg-${mockData[key].color}-500 text-white border-${mockData[key].color}-700`
-                                                : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border-transparent'
-                                        }`}
-                                    >{mockData[key].name}</button>
-                               ))}
-                            </div>
-                        </div>
-                        <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl mt-4">
-                            <h3 className="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Live Data Insights</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${diseaseInfo.color}-100`}>
-                                        <DiseaseIcon size={28} className={`text-${diseaseInfo.color}-600`} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-500">Selected Outbreak</p>
-                                        <h4 className="text-lg font-bold text-slate-800">{diseaseInfo.name}</h4>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-slate-500">Total Reported Cases (Mock)</p>
-                                    <p className="text-3xl font-extrabold text-slate-900">{totalCases.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-slate-500">Most Affected Areas</p>
-                                    <p className="font-semibold text-slate-800">{diseaseInfo.mostAffected}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-                    
-                    <div className="lg:col-span-2 w-full rounded-xl shadow-lg border border-slate-200 z-10 p-4 overflow-hidden">
-                        <HeatMap
-                            value={diseaseInfo.data}
-                            width="100%"
-                            height={300}
-                            startDate={new Date('2025/01/01')}
-                            endDate={new Date('2025/12/31')}
-                            rectSize={12}
-                            legendCellSize={0}
-                            panelColors={{ 0: '#f1f5f9', 20: '#60a5fa', 60: '#34d399', 100: '#f59e0b', 150: '#ef4444' }}
-                        />
-                    </div>
-                </div>
+          </div>
+
+          {/* Heatmap Controls */}
+          <div className="bg-white p-5 rounded-lg border border-gray-200">
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="radius"
+                  className="block text-sm font-semibold text-gray-600 mb-2"
+                >
+                  Heatmap Radius
+                </label>
+                <input
+                  type="range"
+                  id="radius"
+                  min="10"
+                  max="80"
+                  value={heatmapRadius}
+                  onChange={(e) => setHeatmapRadius(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="blur"
+                  className="block text-sm font-semibold text-gray-600 mb-2"
+                >
+                  Heatmap Blur
+                </label>
+                <input
+                  type="range"
+                  id="blur"
+                  min="10"
+                  max="80"
+                  value={heatmapBlur}
+                  onChange={(e) => setHeatmapBlur(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
             </div>
-            <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Future Outbreak Forecasts</h2>
-                 {isLoading ? (
-                    <div className="flex items-center justify-center p-8 text-slate-500">
-                        <Loader2 className="animate-spin mr-3" />
-                        <span>Generating AI-powered predictions...</span>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {predictions.length > 0 ? (
-                            predictions.map((pred) => (<PredictionCard key={pred._id} prediction={pred} />))
-                        ) : (
-                            <p className="text-slate-500 col-span-full text-center py-8">No active forecasts found. The prediction model may be running.</p>
-                        )}
-                    </div>
-                )}
+          </div>
+
+          {/* Live Data Insights */}
+          <div className="bg-white p-5 rounded-lg border border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Live Data Insights
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-red-100 rounded-lg">
+                <DiseaseIcon size={24} className="text-red-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Selected Outbreak</p>
+                <p className="font-bold text-gray-800">{diseaseInfo.name}</p>
+              </div>
             </div>
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs text-gray-500">Total Reported Cases</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {diseaseInfo.totalCases.toLocaleString()}
+              </p>
+            </div>
+            <div className="mt-2">
+              <p className="text-xs text-gray-500">Most Affected Region</p>
+              <p className="font-semibold text-gray-800">{diseaseInfo.mostAffected}</p>
+            </div>
+          </div>
         </div>
-    );
+
+        {/* Right Column: Map */}
+        <div className="lg:col-span-2 bg-white p-4 rounded-lg border border-gray-200 relative h-[600px]">
+        <div className="absolute top-3 right-3 z-[1000] px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
+            Live Demonstration 
+        </div>
+          <MapContainer
+            center={[22.5937, 78.9629]}
+            zoom={5}
+            style={{ height: '100%', width: '100%' }}
+            className="rounded-md"
+          >
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+            />
+            <CustomHeatmapLayer
+              key={activeDisease}
+              data={diseaseInfo.data}
+              radius={heatmapRadius}
+              blur={heatmapBlur}
+            />
+          </MapContainer>
+        </div>
+      </div>
+
+      {/* Predictions */}
+      <div className="bg-white p-8 rounded-2xl shadow-xl border overflow-hidden">
+  <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+    <Bot size={28} className="text-indigo-600" />
+    <span>AI-Powered Future Outbreak Forecasts</span>
+  </h2>
+  {isLoading ? (
+    <div className="flex items-center justify-center p-8 text-slate-500">
+      <Loader2 className="animate-spin mr-3" />
+      <span>Generating predictions...</span>
+    </div>
+  ) : (
+    // ✅ This container is now a horizontally scrolling flexbox
+    <div className="flex gap-6 overflow-x-auto p-2 -m-2">
+      {predictions.length > 0 ? (
+        predictions.map((pred) => (
+          // ✅ Each card is wrapped to control its size
+          <div key={pred._id} className="flex-shrink-0 w-80">
+            <PredictionCard prediction={pred} />
+          </div>
+        ))
+      ) : (
+        <div className="w-full text-slate-500 text-center py-8">
+          <p>No active forecasts found.</p>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+    </div>
+  );
 }
