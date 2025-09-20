@@ -21,7 +21,7 @@ export default function AIChatPage({ patientData }) {
   const storageKey = `aiChat:${abhaId}`;
 
   const [conversation, setConversation] = usePersistentState(storageKey, [
-    { role: 'ai', content: "Hello! I'm your Aarogya AI assistant. Ask me anything about this patient's history." }
+    { role: 'ai', content: "Hello! I'm your AayuLink AI assistant. Ask me anything about this patient's history." }
   ]);
   const [input, setInput] = usePersistentState(`${storageKey}:draft`, '');
   const [isLoading, setIsLoading] = useState(false);

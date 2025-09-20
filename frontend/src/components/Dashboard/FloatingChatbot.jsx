@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { sender: 'ai', text: "Hello! I'm your Aarogya AI assistant. How can I help you with this patient's records today?" }
+    { sender: 'ai', text: "Hello! I'm your AayuLink AI assistant. How can I help you with this patient's records today?" }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
