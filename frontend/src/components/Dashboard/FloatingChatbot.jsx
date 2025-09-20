@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Bot, X, Send, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export default function FloatingChatbot({ medicalHistory }) {
+export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { sender: 'ai', text: "Hello! I'm your Aarogya AI assistant. How can I help you with this patient's records today?" }
@@ -13,10 +15,9 @@ export default function FloatingChatbot({ medicalHistory }) {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Automatically scroll to the bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isOpen]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -24,15 +25,21 @@ export default function FloatingChatbot({ medicalHistory }) {
 
     const newMessages = [...messages, { sender: 'user', text: userInput }];
     setMessages(newMessages);
+    const question = userInput;
     setUserInput('');
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/chat`, {
-        medicalRecords: medicalHistory,
-        question: userInput
-      });
-      setMessages([...newMessages, { sender: 'ai', text: response.data.answer }]);
+      // Send what you already have (MVP): textual history; optionally include reports or abhaId
+      const payload = {
+        question,
+        medicalRecords: medicalHistory || [],
+        reportsAndScans: reportsAndScans || [],
+        // abhaId, // uncomment if you want backend to fetch records by ID
+      };
+
+      const { data } = await axios.post(`${API_URL}/api/chat`, payload);
+      setMessages([...newMessages, { sender: 'ai', text: data.answer }]);
     } catch (error) {
       setMessages([...newMessages, { sender: 'ai', text: "Sorry, I encountered an error. Please try again." }]);
     } finally {
@@ -58,21 +65,50 @@ export default function FloatingChatbot({ medicalHistory }) {
             <div className="space-y-4">
               {messages.map((msg, index) => (
                 <div key={index} className={`flex items-start gap-3 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
-                  {msg.sender === 'ai' && <div className="bg-green-600 text-white rounded-full p-2"><Bot size={20}/></div>}
-                  <div className={`max-w-xs px-4 py-2 rounded-xl ${msg.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                    {msg.text}
+                  {msg.sender === 'ai' && (
+                    <div className="bg-green-600 text-white rounded-full p-2">
+                      <Bot size={20} />
+                    </div>
+                  )}
+
+                  {/* Render AI with Markdown; user as plain text */}
+                  <div
+                    className={`max-w-xs px-4 py-2 rounded-xl ${
+                      msg.sender === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {msg.sender === 'ai' ? (
+                      <div className="prose prose-slate prose-sm max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      msg.text
+                    )}
                   </div>
-                   {msg.sender === 'user' && <div className="bg-blue-500 text-white rounded-full p-2"><User size={20}/></div>}
+
+                  {msg.sender === 'user' && (
+                    <div className="bg-blue-500 text-white rounded-full p-2">
+                      <User size={20} />
+                    </div>
+                  )}
                 </div>
               ))}
+
               {isLoading && (
-                 <div className="flex items-start gap-3">
-                    <div className="bg-green-600 text-white rounded-full p-2 animate-pulse"><Bot size={20}/></div>
-                    <div className="max-w-xs px-4 py-2 rounded-xl bg-gray-100 text-gray-500">
-                        Thinking...
-                    </div>
-                 </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-600 text-white rounded-full p-2 animate-pulse">
+                    <Bot size={20} />
+                  </div>
+                  <div className="max-w-xs px-4 py-2 rounded-xl bg-gray-100 text-gray-500">
+                    Thinking…
+                  </div>
+                </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -86,8 +122,13 @@ export default function FloatingChatbot({ medicalHistory }) {
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Ask about the patient..."
                 className="w-full p-3 pr-12 border rounded-lg"
+                disabled={isLoading}
               />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white bg-green-600 rounded-full hover:bg-green-700">
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white bg-green-600 rounded-full hover:bg-green-700 disabled:opacity-60"
+                disabled={isLoading || !userInput.trim()}
+              >
                 <Send size={20} />
               </button>
             </div>
