@@ -16,7 +16,7 @@ AayuLink is a comprehensive digital healthcare platform designed for the Smart I
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - **Unified Patient Dashboard:** A single, centralized view of a patient's complete medical history, lab reports, scans, and prescriptions.
 - **AI-Powered Health Assistant:** An intelligent chatbot that can summarize lengthy medical documents, answer patient queries, and provide insights.
