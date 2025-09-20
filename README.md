@@ -27,4 +27,4 @@ This README provides an overview of our project for the Smart India Hackathon, i
 - **Source Code:** [GitHub Repository](GITHUB LINK TO THE REPO)
 - **Additional Resources:** [Other Relevant Links](ANY OTHER RELEVANT LINKS)
 
----
+
