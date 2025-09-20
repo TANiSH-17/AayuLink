@@ -10,12 +10,12 @@ This README provides an overview of our project for the Smart India Hackathon, i
 - **Team Leader:** [Tanish Kumar](https://github.com/TANiSH-17)
 
 ### Team Members:
-- **MEMBER_1** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
-- **MEMBER_2** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
-- **MEMBER_3** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
-- **MEMBER_4** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
-- **MEMBER_5** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
-- **MEMBER_6** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
+- **Tanish Kumar** - 2023UCA1820 - [@Tanish Kumar](https://github.com/TANiSH-17)
+- **Shobhit Chola** - 2023UCA1850 - [@Shobhit Chola](https://github.com/ShobhitChola)
+- **Ashtam Pati Tiwari** - 2023UEC4538 - [@Ashtam Pati Tiwari](https://github.com/Ashtam01)
+- **Kajal Soni** - 2024UIC3655 - [@Kajal Soni](https://github.com/soniikajal)
+- **Prakriti Chandra** - 2023UEC4523 - [@Prakriti Chandra](https://github.com/USERNAME)
+- **Akansha** - 2023UEE4571 - [@Akansha](https://github.com/sheelakansha)
 
 ---
 
