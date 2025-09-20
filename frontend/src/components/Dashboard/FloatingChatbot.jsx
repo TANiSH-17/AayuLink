@@ -54,7 +54,7 @@ export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaI
         <div className="bg-white w-96 h-[60vh] rounded-2xl shadow-2xl flex flex-col transform transition-all animate-fade-in-up">
           {/* Header */}
           <div className="bg-green-600 text-white p-4 rounded-t-2xl flex justify-between items-center">
-            <h3 className="font-bold text-lg">Aarogya AI Assistant</h3>
+            <h3 className="font-bold text-lg">AayuLink AI Assistant</h3>
             <button onClick={() => setIsOpen(false)} className="p-1 rounded-full hover:bg-green-700">
               <X size={20} />
             </button>
