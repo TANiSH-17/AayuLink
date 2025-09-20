@@ -26,7 +26,7 @@ AayuLink is a comprehensive digital healthcare platform designed for the Smart I
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 This project leverages the following technologies:
 
@@ -39,7 +39,7 @@ This project leverages the following technologies:
 
 ---
 
-## ⚙️ Local Setup Instructions (Write for both windows and macos)
+## Local Setup Instructions (Write for both windows and macos)
 
 Follow these steps to run the project locally. The commands are the same for both Windows (in Git Bash or WSL) and macOS.
 
@@ -55,5 +55,29 @@ Open your terminal and run the following commands.
 # Clone the repository from GitHub
 git clone [https://github.com/TANiSH-17/SIH-2025.git](https://github.com/TANiSH-17/SIH-2025.git)
 
+
 # Navigate into the cloned project directory
 cd SIH-2025
+
+
+2. Navigate to the Code Directory
+All the source code is located inside the code folder.
+cd code
+
+
+3. Install All Dependencies
+This single command will install all necessary packages for both the backend and frontend.
+npm run install:all
+
+
+Important: Before starting the app, you must create .env files for configuration.
+
+- In the code/backend folder, create a .env file with MONGO_URI, JWT_SECRET, and GEMINI_API_KEY.
+
+- In the code/frontend folder, create a .env file with VITE_API_URL=http://localhost:8000.
+
+4. Run the Application
+This command starts both the backend and frontend servers at the same time.
+npm run dev
+
+The application will be running and accessible at http://localhost:5173.
