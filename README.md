@@ -6,8 +6,8 @@ This README provides an overview of our project for the Smart India Hackathon, i
 
 ## 👥 Team Details
 
-- **Team Name:** TEAM_NAME_HERE
-- **Team Leader:** [@USERNAME](https://github.com/USERNAME)
+- **Team Name:** SIxH Pointers
+- **Team Leader:** [Tanish Kumar](https://github.com/TANiSH-17)
 
 ### Team Members:
 - **MEMBER_1** - ROLL_NUMBER - [@USERNAME](https://github.com/USERNAME)
