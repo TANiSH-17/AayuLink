@@ -21,6 +21,7 @@ const app = express();
 const corsOptions = {
   origin: [
     'https://sih-2025-pi-seven.vercel.app',
+    'https://sih-2025-aayulink.vercel.app', 
     'http://localhost:5173'
   ],
   credentials: true,
