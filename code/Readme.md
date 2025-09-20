@@ -53,7 +53,7 @@ Open your terminal and run the following commands.
 
 ```sh
 # Clone the repository from GitHub
-git clone [https://github.com/TANiSH-17/SIH-2025.git](https://github.com/TANiSH-17/SIH-2025.git)
+git clone https://github.com/TANiSH-17/SIH-2025.git
 
 
 # Navigate into the cloned project directory
