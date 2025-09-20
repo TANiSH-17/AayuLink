@@ -76,8 +76,10 @@ Important: Before starting the app, you must create .env files for configuration
 
 - In the code/frontend folder, create a .env file with VITE_API_URL=http://localhost:8000.
 
+
 4. Run the Application
 This command starts both the backend and frontend servers at the same time.
 npm run dev
+
 
 The application will be running and accessible at http://localhost:5173.
