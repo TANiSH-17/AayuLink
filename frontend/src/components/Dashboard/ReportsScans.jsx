@@ -5,8 +5,7 @@ import UploadReportModal from './UploadReportModal.jsx';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function ReportCard({ report }) {
-  const reportUrl = `${API_URL}/${report.filePath}`;
-
+  const reportUrl = `${API_URL}/uploads/${report.fileName}`;
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between transition-shadow hover:shadow-md">
       <div className="flex items-center gap-4 overflow-hidden">

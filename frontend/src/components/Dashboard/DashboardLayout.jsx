@@ -119,8 +119,11 @@ export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbha
         </main>
       </div>
       {patientData && activeView !== 'nationalPulse' && (
-        <FloatingChatbot patientData={patientData} />
-      )}
+      <FloatingChatbot
+        medicalHistory={patientData?.medicalHistory}
+        reportsAndScans={patientData?.reportsAndScans}
+        abhaId={patientData?.abhaId}
+      />)}
     </div>
   );
 }
