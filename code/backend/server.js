@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // --- Import ALL Route Files ---
-const apiRoutes = require('./routes/api');              // contains /chat, /summarize, etc.
+const apiRoutes = require('./routes/api');              
 const authRoutes = require('./routes/auth');
 const translatorRoutes = require('./routes/translator');
 const prescriptionRoutes = require('./routes/prescription');
