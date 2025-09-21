@@ -101,7 +101,7 @@ export default function OtpVerificationModal({ patientName, onVerify, onClose, e
           <>
             <h2 className="text-2xl font-bold">Patient Consent Required</h2>
             <p className="text-gray-600 mt-2">
-              An OTP has been sent. Please ask <span className="font-semibold">{patientName}</span> for the 6-digit code to proceed.
+              Please enter <span className="font-semibold">081106</span> as 6-digit code to proceed.
             </p>
             <form onSubmit={handleSubmitOtp} className="mt-8">
               <div className="flex justify-center space-x-2">
