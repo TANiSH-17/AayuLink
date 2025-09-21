@@ -4,6 +4,7 @@ const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Patient = require('../models/patient');
 const { protect, admin } = require('../middleware/authMiddleware');
+const dbConnect = require('../lib/dbConnect'); // ✅ 1. IMPORT THE DB CONNECTION HELPER
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -19,9 +20,10 @@ function fileToGenerativePart(buffer, mimeType) {
   };
 }
 
-// ✅ 1. UPLOAD ROUTE: Just saves the file to the database. No AI call.
+// UPLOAD ROUTE
 router.post('/upload/:abhaId', protect, admin, upload.single('reportFile'), async (req, res) => {
   try {
+    await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
     const patient = await Patient.findOne({ abhaId: req.params.abhaId });
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found.' });
@@ -32,13 +34,12 @@ router.post('/upload/:abhaId', protect, admin, upload.single('reportFile'), asyn
       date: new Date(req.body.reportDate),
       fileName: req.file.originalname,
       fileMimeType: req.file.mimetype,
-      fileData: req.file.buffer.toString('base64'), // Store file content
+      fileData: req.file.buffer.toString('base64'),
     };
 
     patient.reportsAndScans.push(newReport);
     await patient.save();
     
-    // Send back the newly created report object, which includes its unique _id
     res.status(201).json({ message: 'Report uploaded successfully!', newReport: patient.reportsAndScans.slice(-1)[0] });
   } catch (error) {
     console.error("Error uploading report:", error);
@@ -46,9 +47,10 @@ router.post('/upload/:abhaId', protect, admin, upload.single('reportFile'), asyn
   }
 });
 
-// ✅ 2. ANALYZE ROUTE: Finds an existing report, calls the AI, and updates the record.
+// ANALYZE ROUTE
 router.post('/analyze/:abhaId/:reportId', protect, admin, async (req, res) => {
   try {
+    await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
     const patient = await Patient.findOne({ abhaId: req.params.abhaId });
     if (!patient) {
         return res.status(404).json({ message: 'Patient not found.' });
@@ -70,7 +72,6 @@ router.post('/analyze/:abhaId/:reportId', protect, admin, async (req, res) => {
     const responseText = result.response.text().replace(/```json|```/g, '').trim();
     const aiAnalysis = JSON.parse(responseText);
 
-    // Update the specific report's aiAnalysis field
     report.aiAnalysis = aiAnalysis;
     await patient.save();
 
@@ -81,9 +82,10 @@ router.post('/analyze/:abhaId/:reportId', protect, admin, async (req, res) => {
   }
 });
 
-// ✅ 3. DELETE ROUTE: Remains ready for use.
+// DELETE ROUTE
 router.delete('/:abhaId/:reportId', protect, admin, async (req, res) => {
   try {
+    await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
     const { abhaId, reportId } = req.params;
 
     const patient = await Patient.findOneAndUpdate(
@@ -96,7 +98,8 @@ router.delete('/:abhaId/:reportId', protect, admin, async (req, res) => {
     }
 
     res.status(200).json({ message: 'Report deleted successfully.' });
-  } catch (error) {
+  } catch (error)
+ {
     console.error('Error deleting report:', error);
     res.status(500).json({ message: 'Server error while deleting report.' });
   }

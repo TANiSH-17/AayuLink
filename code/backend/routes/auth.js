@@ -2,11 +2,15 @@ const express = require('express');
 const User = require('../models/user');
 const Hospital = require('../models/hospital');
 const jwt = require('jsonwebtoken');
-const { protect } = require('../middleware/authMiddleware'); // ✅ 1. IMPORT THE MIDDLEWARE
+const { protect } = require('../middleware/authMiddleware');
+const dbConnect = require('../lib/dbConnect'); // ✅ 1. IMPORT THE DB CONNECTION HELPER
+
 const router = express.Router();
 
 // --- POST /api/auth/register ---
 router.post('/register', async (req, res) => {
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   const { username, password, role, hospitalName, specialCode } = req.body;
   try {
     const userExists = await User.findOne({ username, role });
@@ -47,6 +51,8 @@ router.post('/register', async (req, res) => {
 
 // --- POST /api/auth/login ---
 router.post('/login', async (req, res) => {
+  await dbConnect(); // ✅ 3. ENSURE DB IS CONNECTED
+
   try {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
@@ -82,12 +88,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ 2. ADD THE MISSING VERIFICATION ROUTE
 // --- GET /api/auth/verify ---
 // This protected route verifies a token and returns user data.
+// Note: The 'protect' middleware handles its own database interaction.
+// If it also experiences cold starts, it should be updated to use dbConnect() as well.
 router.get('/verify', protect, (req, res) => {
-  // If the 'protect' middleware is successful, it attaches the user data to the request object.
-  // We simply send that user data back to the frontend.
   res.status(200).json({ user: req.user });
 });
 

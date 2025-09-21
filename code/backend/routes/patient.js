@@ -3,9 +3,11 @@ const router = express.Router();
 const Patient = require('../models/patient');
 const User = require('../models/user');
 const Hospital = require('../models/hospital');
+const dbConnect = require('../lib/dbConnect'); // ✅ 1. IMPORT THE DB CONNECTION HELPER
 
 router.post('/create', async (req, res) => {
-  // ✅ 'password' is no longer received
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   const { abhaId, hospitalCode, personalInfo, criticalInfo } = req.body;
 
   if (!abhaId || !hospitalCode || !personalInfo) {
@@ -31,10 +33,7 @@ router.post('/create', async (req, res) => {
       registeredAtHospital: hospital.name 
     });
     await newPatient.save();
-
-    // ✅ The logic to create a new User has been removed.
     
-    // ✅ Updated success message
     res.status(201).json({ message: 'Patient record created successfully!' });
 
   } catch (error) {

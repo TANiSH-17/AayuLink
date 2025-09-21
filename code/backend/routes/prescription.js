@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Prescription = require('../models/Prescription');
 const MedicalRecord = require('../models/medicalRecord');
 const Patient = require('../models/patient'); 
+const dbConnect = require('../lib/dbConnect'); // ✅ 1. IMPORT THE DB CONNECTION HELPER
 
 const router = express.Router();
 
@@ -13,6 +14,8 @@ const logError = (routeName, error) => {
 };
 
 router.post('/issue', async (req, res) => {
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   const { abhaId, medicines } = req.body;
 
   if (!abhaId || !medicines || !Array.isArray(medicines) || medicines.length === 0) {
@@ -41,8 +44,6 @@ router.post('/issue', async (req, res) => {
 
     const medicationSummary = medicines.map(m => `${m.name} (${m.dosage})`).join(', ');
     const historyRecord = new MedicalRecord({
-      // ✅ --- THIS IS THE FIX ---
-      // We now generate a unique recordId for the medical history entry.
       recordId: `PRE-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       patient: abhaId,
       date: new Date(),
@@ -61,10 +62,9 @@ router.post('/issue', async (req, res) => {
   }
 });
 
-
-// --- YOUR EXISTING ROUTES (UNCHANGED) ---
-
 router.post('/create', async (req, res) => {
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   try {
     const { patientAbhaId, patientName, doctorName, hospitalName, medications, notes } = req.body;
     const validMedications = medications.filter(m => m && m.name && m.name.trim() !== '');
@@ -91,6 +91,8 @@ router.post('/create', async (req, res) => {
 });
 
 router.get('/verify/:token', async (req, res) => {
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   try {
     const { token } = req.params;
     const prescription = await Prescription.findOne({ token });
@@ -103,6 +105,8 @@ router.get('/verify/:token', async (req, res) => {
 });
 
 router.post('/fulfill/:token', async (req, res) => {
+  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
   try {
     const { token } = req.params;
     const prescription = await Prescription.findOne({ token });
@@ -118,6 +122,8 @@ router.post('/fulfill/:token', async (req, res) => {
 });
 
 router.get('/patient/:abhaId', async (req, res) => {
+    await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+
     try {
         const { abhaId } = req.params;
         const prescriptions = await Prescription.find({ patientAbhaId: abhaId }).sort({ createdAt: -1 });

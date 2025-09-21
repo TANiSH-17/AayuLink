@@ -6,8 +6,10 @@ const path = require('path');
 const fs = require('fs');
 const pdf = require('pdf-parse');
 
+// --- DATABASE MODELS AND CONNECTION HELPER ---
 const Patient = require('../models/patient');
 const MedicalRecord = require('../models/medicalRecord');
+const dbConnect = require('../lib/dbConnect'); // ✅ IMPORT THE DB HELPER
 
 const router = express.Router();
 
@@ -17,16 +19,14 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // --- UPLOADS PATH (absolute) ---
 const uploadsDir = path.resolve(__dirname, '../uploads');
-
-// Ensure uploads directory exists (safe on repeat)
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// --- MULTER CONFIGURATION (use sanitized original filename) ---
+// --- MULTER CONFIGURATION (unchanged) ---
 const sanitizeBase = (name) =>
   name
-    .replace(/[^a-z0-9-_]+/gi, '_') // keep letters/numbers/_/-
+    .replace(/[^a-z0-9-_]+/gi, '_')
     .replace(/_+/g, '_')
     .toLowerCase();
 
@@ -38,15 +38,12 @@ const storage = multer.diskStorage({
     const ext = path.extname(file.originalname).toLowerCase();
     const base = sanitizeBase(path.basename(file.originalname, ext));
     let safe = `${base}${ext}`;
-
-    // avoid overwrite if same name exists
     if (fs.existsSync(path.join(uploadsDir, safe))) {
       safe = `${base}_${Date.now()}${ext}`;
     }
     cb(null, safe);
   }
 });
-
 const upload = multer({ storage });
 
 // ------------------------------------
@@ -55,6 +52,7 @@ const upload = multer({ storage });
 
 router.post('/fetch-records', async (req, res) => {
   try {
+    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
     const { abhaId } = req.body;
     if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
 
@@ -84,6 +82,7 @@ router.post('/fetch-records', async (req, res) => {
 
 router.post('/patient-lookup', async (req, res) => {
   try {
+    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
     const { abhaId } = req.body;
     if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
 
@@ -119,6 +118,7 @@ router.post('/medical-history/add', async (req, res) => {
   }
 
   try {
+    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
     const newRecord = new MedicalRecord({
       recordId: `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       patient: abhaId,
@@ -146,15 +146,16 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
   }
 
   try {
+    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
     const dataBuffer = fs.readFileSync(path.join(uploadsDir, file.filename));
     const pdfData = await pdf(dataBuffer);
 
     const newReport = {
       type: reportType || 'General Report',
       date: reportDate || new Date(),
-      fileName: file.filename,                  // e.g., shobhit_mri.pdf (sanitized)
-      filePath: `uploads/${file.filename}`,     // stable relative web path
-      originalName: file.originalname,          // optional: for display
+      fileName: file.filename,
+      filePath: `uploads/${file.filename}`,
+      originalName: file.originalname,
       format: file.mimetype,
       textContent: pdfData.text || '',
     };
@@ -181,6 +182,7 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
 // -----------------------
 
 router.post('/summarize', async (req, res) => {
+  // This route does not access the database, so no dbConnect() is needed.
   const { medicalRecords } = req.body;
   if (!medicalRecords || medicalRecords.length === 0) {
     return res.status(400).json({ error: 'Medical records are required.' });
@@ -202,13 +204,13 @@ router.post('/summarize', async (req, res) => {
 
 router.post('/chat', async (req, res) => {
   try {
+    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY (might be needed for fallback)
     const { abhaId, medicalRecords, reportsAndScans, question } = req.body;
     if (!question) return res.status(400).json({ error: 'A question is required.' });
 
     let records = medicalRecords;
     let reports = reportsAndScans;
 
-    // If records aren’t provided, try fetching via abhaId
     if ((!records || records.length === 0) && abhaId) {
       const patient = await Patient.findOne({ abhaId });
       if (!patient) return res.status(404).json({ error: 'Patient not found.' });
@@ -216,16 +218,16 @@ router.post('/chat', async (req, res) => {
       records = await MedicalRecord.find({ patient: abhaId }).sort({ date: -1 });
       reports = patient.reportsAndScans || [];
     }
-
+    
+    // The rest of this function remains unchanged...
     if (!records || records.length === 0) {
       return res.status(400).json({ error: 'No medical records provided or found for this ABHA ID.' });
     }
 
-    // Enrich reports with textContent when missing by reading PDFs from uploads/
     const safeReadReportText = async (filePath) => {
       try {
         if (!filePath) return '';
-        const filename = path.basename(filePath);           // prevent path traversal
+        const filename = path.basename(filePath);
         const abs = path.join(uploadsDir, filename);
         if (!fs.existsSync(abs)) return '';
         const buf = fs.readFileSync(abs);
@@ -281,6 +283,7 @@ router.post('/chat', async (req, res) => {
 });
 
 router.post('/blueprint', async (req, res) => {
+  // This route does not access the database, so no dbConnect() is needed.
   const { medicalRecords } = req.body;
   if (!medicalRecords || medicalRecords.length === 0) {
     return res.status(400).json({ error: 'Medical records are required.' });
