@@ -24,7 +24,8 @@ const corsOptions = {
   origin: [
     'https://sih-2025-pi-seven.vercel.app',
     'https://sih-2025-aayulink.vercel.app', 
-    'https://sih-2025-bpa576elr-tanish-17s-projects.vercel.app' ,
+    'https://sih-2025-bpa576elr-tanish-17s-projects.vercel.app',
+    'https://sih-2025-aegr978t0-tanish-17s-projects.vercel.app',
     'http://localhost:5173'
   ],
   credentials: true,
