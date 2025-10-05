@@ -10,17 +10,14 @@ const personalInfoSchema = new mongoose.Schema({
 }, { _id: false });
 
 /**
- * Report / Scan subdocument
- * Notes:
- * - We keep your original fields (fileName, format, textContent, filePath) so the frontend doesn’t break.
+ * Report / Scan subdocument (existing)
+ * - We keep your original fields (fileName, format, textContent, filePath)
  * - We add Cloudinary fields (fileUrl, filePublicId, fileMimeType).
- * - `filePath` will be set to the same value as Cloudinary `secure_url` so existing UI that reads `filePath` continues to work.
  */
 const reportSchema = new mongoose.Schema({
   type:        { type: String, required: true },
   date:        { type: Date,   required: true },
 
-  // metadata you already had / are using
   fileName:    { type: String, required: true },
   format:      { type: String, required: true },  // e.g., 'pdf', 'png'
   textContent: { type: String, default: '' },
@@ -32,7 +29,22 @@ const reportSchema = new mongoose.Schema({
   fileUrl:      { type: String },     // same as filePath, for clarity going forward
   filePublicId: { type: String },     // needed for deletes/updates
   fileMimeType: { type: String },     // e.g., 'application/pdf'
-}, { timestamps: true }); // keep _id enabled so reports can be referenced by id
+}, { timestamps: true });
+
+/** NEW: MDR sub-objects **/
+const movementSchema = new mongoose.Schema({
+  hospitalId: { type: String, required: true },
+  ward:       { type: String, required: true },
+  bed:        { type: String },
+  start:      { type: Date,   required: true },
+  end:        { type: Date }, // null/undefined means still admitted
+}, { _id: false });
+
+const screeningSchema = new mongoose.Schema({
+  date:   { type: Date, default: Date.now },
+  type:   { type: String, default: 'swab' },              // swab/culture/etc.
+  result: { type: String, enum: ['pending','negative','positive'], default: 'pending' }
+}, { _id: false });
 
 const patientSchema = new mongoose.Schema({
   abhaId: { type: String, required: true, unique: true },
@@ -45,8 +57,21 @@ const patientSchema = new mongoose.Schema({
     dosage: { type: String, required: true }
   }],
 
-  // reports & scans
+  // NEW: MDR fields (additive, non-breaking)
+  mdr: {
+    status:     { type: String, enum: ['unknown','suspected','positive','negative'], default: 'unknown' },
+    pathogen:   { type: String, default: '' },             // e.g., MRSA/CRE/ESBL
+    detectedAt: { type: Date }
+  },
+  movements:   [movementSchema],
+  screenings:  [screeningSchema],
+
+  // existing reports & scans
   reportsAndScans: [reportSchema]
 }, { timestamps: true });
+
+// Optional helpful indexes (not required for demo)
+// patientSchema.index({ "movements.hospitalId": 1, "movements.ward": 1, "movements.start": 1, "movements.end": 1 });
+// patientSchema.index({ "mdr.status": 1 });
 
 module.exports = mongoose.model('Patient', patientSchema);
