@@ -1,45 +1,81 @@
-const express = require('express');
-const router = express.Router();
-const Patient = require('../models/patient');
-const User = require('../models/user');
-const Hospital = require('../models/hospital');
-const dbConnect = require('../lib/dbConnect'); // ✅ 1. IMPORT THE DB CONNECTION HELPER
+const mongoose = require('mongoose');
 
-router.post('/create', async (req, res) => {
-  await dbConnect(); // ✅ 2. ENSURE DB IS CONNECTED
+const personalInfoSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  age: { type: Number, required: true },
+  gender: { type: String, required: true },
+  bloodType: { type: String, required: true },
+  emergencyContact: { type: String, required: true },
+  personalNumber: { type: String, required: true }
+}, { _id: false });
 
-  const { abhaId, hospitalCode, personalInfo, criticalInfo } = req.body;
+/**
+ * Report / Scan subdocument (existing)
+ * - We keep your original fields (fileName, format, textContent, filePath)
+ * - We add Cloudinary fields (fileUrl, filePublicId, fileMimeType).
+ */
+const reportSchema = new mongoose.Schema({
+  type:        { type: String, required: true },
+  date:        { type: Date,   required: true },
 
-  if (!abhaId || !hospitalCode || !personalInfo) {
-    return res.status(400).json({ message: 'Missing required fields for patient creation.' });
-  }
+  fileName:    { type: String, required: true },
+  format:      { type: String, required: true },  // e.g., 'pdf', 'png'
+  textContent: { type: String, default: '' },
 
-  try {
-    const hospital = await Hospital.findOne({ code: hospitalCode.toUpperCase() });
-    if (!hospital) {
-      return res.status(401).json({ message: 'Invalid Hospital Code. You are not authorized.' });
-    }
+  // legacy/front-end compatibility: keep this but store Cloudinary URL in it
+  filePath:    { type: String, required: true },
 
-    const existingPatient = await Patient.findOne({ abhaId });
-    if (existingPatient) {
-      return res.status(400).json({ message: 'A patient with this ABHA ID already exists.' });
-    }
+  // Cloudinary fields (NEW)
+  fileUrl:      { type: String },     // same as filePath, for clarity going forward
+  filePublicId: { type: String },     // needed for deletes/updates
+  fileMimeType: { type: String },     // e.g., 'application/pdf'
+}, { timestamps: true });
 
-    const newPatient = new Patient({
-      abhaId,
-      personalInfo,
-      allergies: criticalInfo.allergies || [],
-      chronicConditions: criticalInfo.chronicConditions || [],
-      registeredAtHospital: hospital.name 
-    });
-    await newPatient.save();
-    
-    res.status(201).json({ message: 'Patient record created successfully!' });
+/** NEW: MDR sub-objects **/
+const movementSchema = new mongoose.Schema({
+  hospitalId: { type: String, required: true },
+  ward:       { type: String, required: true },
+  bed:        { type: String },
+  start:      { type: Date,   required: true },
+  end:        { type: Date }, // null/undefined means still admitted
+}, { _id: false });
 
-  } catch (error) {
-    console.error("Error creating new patient:", error);
-    res.status(500).json({ message: 'Server error during patient creation.' });
-  }
-});
+const screeningSchema = new mongoose.Schema({
+  date:   { type: Date, default: Date.now },
+  type:   { type: String, default: 'swab' },  // swab/culture/...
+  result: { type: String, enum: ['pending','negative','positive'], default: 'pending' }
+}, { _id: true, timestamps: true });
 
-module.exports = router;
+const patientSchema = new mongoose.Schema({
+  abhaId: { type: String, required: true, unique: true },
+  personalInfo: { type: personalInfoSchema, required: true },
+  registeredAtHospital: { type: String, required: false },
+  allergies: [{ type: String }],
+  chronicConditions: [{ type: String }],
+  currentMedications: [{
+    name: { type: String, required: true },
+    dosage: { type: String, required: true }
+  }],
+
+  // NEW: MDR fields (additive, non-breaking)
+  mdr: {
+    status:     { type: String, enum: ['unknown','suspected','positive','negative'], default: 'unknown' },
+    pathogen:   { type: String, default: '' }, // e.g., MRSA/CRE/ESBL
+    detectedAt: { type: Date }
+  },
+
+  // NEW: ward/bed timeline
+  movements:   [movementSchema],
+
+  // ✅ NEW: screening records
+  screenings:  [screeningSchema],
+
+  // existing reports & scans
+  reportsAndScans: [reportSchema]
+}, { timestamps: true });
+
+// Optional indexes (not required for demo)
+// patientSchema.index({ "movements.hospitalId": 1, "movements.ward": 1, "movements.start": 1, "movements.end": 1 });
+// patientSchema.index({ "mdr.status": 1 });
+
+module.exports = mongoose.models.Patient || mongoose.model('Patient', patientSchema);
