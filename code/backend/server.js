@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 // --- Import ALL Route Files ---
 const apiRoutes = require('./routes/api');              
@@ -13,7 +13,7 @@ const prescriptionRoutes = require('./routes/prescription');
 const otpRoutes = require('./routes/otp');
 const predictionRoutes = require('./routes/predictions');
 const patientRoutes = require('./routes/patient');
-const mdrRoutes = require('./routes/mdr'); // ✅ NEW
+const mdrRoutes = require('./routes/mdr'); 
 const { runPredictionModel } = require('./services/predictionService');
 
 const app = express();
@@ -43,7 +43,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Serve uploaded PDFs statically (still ok to keep)
+// Serve uploaded files statically
 const uploadsDir = path.join(__dirname, 'uploads');
 console.log('Serving uploads from:', uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
@@ -55,7 +55,7 @@ app.use('/api/translate', translatorRoutes);
 app.use('/api/prescription', prescriptionRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/predictions', predictionRoutes);
-app.use('/api/mdr', mdrRoutes); // ✅ NEW
+app.use('/api/mdr', mdrRoutes);
 app.use('/api', apiRoutes);
 
 // Health check
@@ -75,9 +75,9 @@ if (!MONGO_URI) {
 app.listen(PORT, () => {
   console.log(`Server is listening on http://localhost:${PORT}`);
   try {
-    const { runPredictionModel } = require('./services/predictionService');
+    // Start the recurring public health prediction model
     runPredictionModel();
-    setInterval(runPredictionModel, 3600000);
+    setInterval(runPredictionModel, 3600000); // Runs every hour
   } catch (e) {
     console.error('Prediction service failed to start:', e);
   }

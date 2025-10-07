@@ -99,4 +99,80 @@ async function runPredictionModel() {
     console.log('[Prediction Service] Prediction model run complete.');
 }
 
-module.exports = { runPredictionModel };
+
+// --- NEW: SEIR Hospital Outbreak Prediction Logic ---
+
+// A basic SEIR model simulation
+const runSEIRPrediction = (initialState, params, days) => {
+  let { S, E, I, R, N } = initialState;
+  const { beta, sigma, gamma } = params;
+  
+  const forecast = [];
+
+  for (let day = 0; day < days; day++) {
+    // Calculate new transitions based on current state
+    const newlyExposed = (beta * I * S) / N;
+    const newlyInfectious = sigma * E;
+    const newlyRecovered = gamma * I;
+
+    // Update the state for the next day
+    S -= newlyExposed;
+    E += newlyExposed - newlyInfectious;
+    I += newlyInfectious - newlyRecovered;
+    R += newlyRecovered;
+
+    // Ensure values are not negative
+    S = Math.max(0, S);
+    E = Math.max(0, E);
+    I = Math.max(0, I);
+    R = Math.max(0, R);
+
+    forecast.push({
+      day: day + 1,
+      susceptible: Math.round(S),
+      exposed: Math.round(E),
+      infectious: Math.round(I),
+      recovered: Math.round(R),
+    });
+  }
+
+  return forecast;
+};
+
+// Main function to be called by the API route
+const generateWardForecast = async (hospitalId, wardName) => {
+  // In a real system, you would fetch all patients in this specific ward
+  // For this demo, we'll use example data.
+  // TODO: Replace this with a real database query to get patient counts by status.
+  const currentWardState = {
+    totalPatients: 20,
+    infectiousCount: 2,  // Patients with 'positive' MDR status
+    exposedCount: 3,     // Patients with a recent high-risk exposure
+    recoveredCount: 1,   // Patients with 'negative' status after being positive
+  };
+
+  // --- Model Parameters ---
+  // These would be tuned based on the specific pathogen (e.g., MRSA)
+  const modelParams = {
+    beta: 0.5,    // Transmission rate
+    sigma: 1/5,   // Incubation period (5 days)
+    gamma: 1/10,  // Recovery period (10 days)
+  };
+
+  const N = currentWardState.totalPatients;
+  const initialState = {
+    I: currentWardState.infectiousCount,
+    E: currentWardState.exposedCount,
+    R: currentWardState.recoveredCount,
+    S: N - currentWardState.infectiousCount - currentWardState.exposedCount - currentWardState.recoveredCount,
+    N: N,
+  };
+
+  const forecastDays = 14;
+  const forecast = runSEIRPrediction(initialState, modelParams, forecastDays);
+  
+  return { wardName, current: initialState, forecast };
+};
+
+// --- UPDATED: Export both the old and new functions ---
+module.exports = { runPredictionModel, generateWardForecast };
