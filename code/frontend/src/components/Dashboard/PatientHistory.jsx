@@ -1,12 +1,10 @@
 import React, { useState, useMemo } from 'react';
-// Corrected import paths to be absolute, ensuring the build system finds them.
 import MedicalRecordCard from '/src/components/MedicalRecordCard.jsx';
 import AddHistoryModal from '/src/components/Dashboard/AddHistoryModal.jsx';
 import { Heart, Brain, Activity, PersonStanding, Plus } from 'lucide-react';
 
 // HealthVisualizer component remains the same.
 function HealthVisualizer({ medicalHistory }) {
-    // ... (no changes inside this component)
     const healthFlags = useMemo(() => {
     const historyText = medicalHistory
       .map(r => (r.details?.toLowerCase() || '') + (r.recordType?.toLowerCase() || ''))
@@ -38,18 +36,30 @@ function HealthVisualizer({ medicalHistory }) {
   );
 }
 
-// --- Main Patient History Page ---
-// 1. FIX: Receive `currentUser` prop instead of `userRole`
+
 export default function PatientHistory({ patientData, currentUser, onDataRefresh }) {
-  
-  // --- DEBUGGING LINE ADDED ---
-  console.log('2. Prop received in PatientHistory:', currentUser);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // ✅ UPDATE 1: Added a "guard clause" to prevent crashes if patientData is loading.
+  // This makes the component more robust during initial data fetching.
+  if (!patientData) {
+    return (
+        <div className="text-center py-20">
+            <p className="text-gray-500">Loading patient data...</p>
+        </div>
+    );
+  }
 
   const { personalInfo, medicalHistory, abhaId } = patientData;
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // 2. FIX: Check the role from within the `currentUser` object
   const isAdmin = currentUser?.role === 'admin';
+
+  // ✅ UPDATE 2: Sort the medical history to show the most recent records first.
+  // useMemo ensures this only recalculates when the medical history changes.
+  const sortedMedicalHistory = useMemo(() => {
+    if (!medicalHistory) return [];
+    // Creates a new sorted array without modifying the original prop
+    return [...medicalHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [medicalHistory]);
 
   const handleHistoryAdded = () => {
     onDataRefresh();
@@ -74,7 +84,6 @@ export default function PatientHistory({ patientData, currentUser, onDataRefresh
       <div>
         <div className="flex justify-between items-center mb-4">
             <h3 className="text-2xl font-semibold text-gray-800">Complete Medical History</h3>
-            {/* This button will now correctly appear for admins */}
             {isAdmin && (
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -86,8 +95,9 @@ export default function PatientHistory({ patientData, currentUser, onDataRefresh
             )}
         </div>
         <div className="space-y-4">
-          {medicalHistory && medicalHistory.length > 0 ? (
-            medicalHistory.map(record => (
+          {/* We now map over the new `sortedMedicalHistory` array */}
+          {sortedMedicalHistory.length > 0 ? (
+            sortedMedicalHistory.map(record => (
               <MedicalRecordCard key={record._id || record.recordId} record={record} />
             ))
           ) : (
@@ -103,7 +113,6 @@ export default function PatientHistory({ patientData, currentUser, onDataRefresh
             abhaId={abhaId}
             onClose={() => setIsModalOpen(false)}
             onHistoryAdded={handleHistoryAdded}
-            // 3. FIX: Pass the hospital name from the currentUser object
             hospitalName={currentUser?.hospitalName}
         />
       )}

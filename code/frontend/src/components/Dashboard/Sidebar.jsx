@@ -46,6 +46,7 @@ export default function Sidebar({ activeView, setActiveView, onLogout, onSwitchP
       </div>
 
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+      <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Patient Tools</p>
         {patientNavItems.map(item => (
           <a
             key={item.id}
