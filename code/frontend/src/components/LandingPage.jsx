@@ -130,7 +130,7 @@ function WhatIsAayulinkInline() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => { if (entry.isIntersecting) { setActiveCard(entry.target.id); } });
-      }, { rootMargin: "-40% 0px -60% 0px" }
+      }, { rootMargin: "-40% 0px -40% 0px" }
     );
     const refs = [aadhaarRef, panRef, abhaRef];
     refs.forEach(ref => { if (ref.current) observer.observe(ref.current); });
