@@ -16,7 +16,7 @@
     "chart.js": "^4.5.0",
     "d3-scale": "^4.0.2",
     "d3-scale-chromatic": "^3.1.0",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^12.23.22",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "lucide-react": "^0.543.0",

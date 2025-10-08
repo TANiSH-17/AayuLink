@@ -10,7 +10,8 @@ import FloatingChatbot from './FloatingChatbot.jsx';
 import NationalHealthPulse from './NationalHealthPulse.jsx';
 import MdrTracing from './MdrTracing.jsx';
 import MdrInsights from './MdrInsights.jsx';
-import ScreeningAnalytics from './ScreeningAnalytics.jsx'; // ✅ NEW
+import ScreeningAnalytics from './ScreeningAnalytics.jsx';
+import StewardshipDashboard from './StewardshipDashboard.jsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -21,10 +22,10 @@ export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbha
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Views that do NOT need a patient fetch
-    const skipFetchViews = ['nationalPulse', 'mdr_insights', 'analytics'];
+    const skipFetchViews = ['nationalPulse', 'mdr_insights', 'analytics', 'stewardship'];
 
     if (!initialAbhaId || skipFetchViews.includes(activeView)) {
+      setPatientData(null);
       setIsLoading(false);
       return;
     }
@@ -51,12 +52,11 @@ export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbha
   };
 
   const renderActiveView = () => {
-    // Render these immediately (no patient required)
     if (activeView === 'nationalPulse') return <NationalHealthPulse />;
     if (activeView === 'mdr_insights') return <MdrInsights />;
-    if (activeView === 'analytics') return <ScreeningAnalytics />; // ✅ handle Analytics
+    if (activeView === 'analytics') return <ScreeningAnalytics />;
+    if (activeView === 'stewardship') return <StewardshipDashboard />;
 
-    // Everything below uses patient data
     if (isLoading) {
       return <div className="flex-1 p-8 text-center font-semibold text-lg">Loading Patient Data...</div>;
     }
@@ -91,14 +91,13 @@ export default function DashboardLayout({ onLogout, onSwitchPatient, initialAbha
         onSwitchPatient={onSwitchPatient}
         patientName={patientData?.personalInfo?.name}
       />
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col lg:ml-64">
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {renderActiveView()}
         </main>
       </div>
 
-      {/* Chatbot only on patient-scoped views */}
-      {patientData && !['nationalPulse', 'mdr_insights', 'analytics'].includes(activeView) && (
+      {patientData && !['nationalPulse', 'mdr_insights', 'analytics', 'stewardship'].includes(activeView) && (
         <FloatingChatbot
           medicalHistory={patientData?.medicalHistory}
           reportsAndScans={patientData?.reportsAndScans}

@@ -10,7 +10,8 @@ import {
   Globe,
   Users,
   Activity,
-  BarChart3 // ✅ NEW icon
+  BarChart3,
+  Syringe
 } from 'lucide-react';
 
 export default function Sidebar({ activeView, setActiveView, onLogout, onSwitchPatient, patientName }) {
@@ -20,9 +21,13 @@ export default function Sidebar({ activeView, setActiveView, onLogout, onSwitchP
     { id: 'ai_chat', label: 'AI Assistant', icon: Bot },
     { id: 'reports', label: 'Reports & Scans', icon: FileScan },
     { id: 'e_prescription', label: 'e-Prescriptions', icon: ClipboardList },
+  ];
+
+  const mdrTools = [
     { id: 'mdr', label: 'MDR Tracing', icon: ShieldAlert },
     { id: 'mdr_insights', label: 'MDR Insights', icon: Activity },
-    { id: 'analytics', label: 'Screening Analytics', icon: BarChart3 }, // ✅ NEW
+    { id: 'analytics', label: 'Screening Analytics', icon: BarChart3 },
+    { id: 'stewardship', label: 'Antibiotic Stewardship', icon: Syringe },
   ];
 
   return (
@@ -32,7 +37,6 @@ export default function Sidebar({ activeView, setActiveView, onLogout, onSwitchP
           <LayoutDashboard className="h-8 w-8 text-green-600" />
           <h1 className="ml-3 text-2xl font-bold text-gray-800">AayuLink</h1>
         </div>
-
         {patientName && (
           <div className="p-4 text-center border-b">
             <p className="text-sm text-gray-500">Viewing Records For</p>
@@ -59,8 +63,29 @@ export default function Sidebar({ activeView, setActiveView, onLogout, onSwitchP
         ))}
 
         <div className="pt-4 mt-4 border-t border-gray-200">
+          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">MDR Tools</p>
+          <div className="mt-2 space-y-2">
+            {mdrTools.map(item => (
+              <a
+                key={item.id}
+                href="#"
+                onClick={(e) => { e.preventDefault(); setActiveView(item.id); }}
+                className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors
+                  ${activeView === item.id 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+                }
+              >
+                <item.icon className="h-5 w-5 mr-3" />
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </div>
+        
+        <div className="pt-4 mt-4 border-t border-gray-200">
           <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">System Tools</p>
-          <a
+           <a
             key="nationalPulse"
             href="#"
             onClick={(e) => { e.preventDefault(); setActiveView('nationalPulse'); }}

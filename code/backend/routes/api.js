@@ -1,4 +1,3 @@
-// backend/routes/api.js
 const express = require('express');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const multer = require('multer');
@@ -9,7 +8,10 @@ const pdf = require('pdf-parse');
 // --- DATABASE MODELS AND CONNECTION HELPER ---
 const Patient = require('../models/patient');
 const MedicalRecord = require('../models/medicalRecord');
-const dbConnect = require('../lib/dbConnect'); // ✅ IMPORT THE DB HELPER
+const dbConnect = require('../lib/dbConnect');
+
+// --- MIDDLEWARE ---
+const { protect, admin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -23,13 +25,8 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// --- MULTER CONFIGURATION (unchanged) ---
-const sanitizeBase = (name) =>
-  name
-    .replace(/[^a-z0-9-_]+/gi, '_')
-    .replace(/_+/g, '_')
-    .toLowerCase();
-
+// --- MULTER CONFIGURATION ---
+const sanitizeBase = (name) => name.replace(/[^a-z0-9-_]+/gi, '_').replace(/_+/g, '_').toLowerCase();
 const storage = multer.diskStorage({
   destination: function (_req, _file, cb) {
     cb(null, uploadsDir);
@@ -52,7 +49,7 @@ const upload = multer({ storage });
 
 router.post('/fetch-records', async (req, res) => {
   try {
-    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
+    await dbConnect();
     const { abhaId } = req.body;
     if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
 
@@ -82,7 +79,7 @@ router.post('/fetch-records', async (req, res) => {
 
 router.post('/patient-lookup', async (req, res) => {
   try {
-    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
+    await dbConnect();
     const { abhaId } = req.body;
     if (!abhaId) return res.status(400).json({ error: 'ABHA ID is required.' });
 
@@ -106,6 +103,55 @@ router.post('/patient-lookup', async (req, res) => {
   }
 });
 
+// --- NEW: Analytics for Stewardship Dashboard ---
+
+const generateAntibiogramData = () => {
+  const pathogens = ['MRSA', 'CRE', 'ESBL', 'Pseudomonas aeruginosa'];
+  const antibiotics = ['Vancomycin', 'Linezolid', 'Daptomycin', 'Meropenem', 'Colistin'];
+  
+  return pathogens.map(pathogen => ({
+    pathogen,
+    susceptibility: antibiotics.map(antibiotic => ({
+      antibiotic,
+      value: Math.floor(Math.random() * (99 - 40 + 1) + 40)
+    }))
+  }));
+};
+
+const generateTrendData = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const classes = ['Carbapenems', 'Fluoroquinolones', 'Cephalosporins'];
+
+  return months.map(month => {
+    const monthData = { month };
+    classes.forEach(cls => {
+      monthData[cls] = Math.floor(Math.random() * (200 - 50 + 1) + 50);
+    });
+    return monthData;
+  });
+};
+
+router.get('/analytics/antibiogram', protect, admin, async (req, res) => {
+  try {
+    const data = generateAntibiogramData();
+    res.json(data);
+  } catch (err) {
+    console.error('Antibiogram data error:', err);
+    res.status(500).json({ message: 'Server error generating antibiogram.' });
+  }
+});
+
+router.get('/analytics/prescription-trends', protect, admin, async (req, res) => {
+  try {
+    const data = generateTrendData();
+    res.json(data);
+  } catch (err) {
+    console.error('Prescription trend data error:', err);
+    res.status(500).json({ message: 'Server error generating trend data.' });
+  }
+});
+
+
 // ------------------------------------
 // -------- ADMIN WRITE ROUTES --------
 // ------------------------------------
@@ -118,7 +164,7 @@ router.post('/medical-history/add', async (req, res) => {
   }
 
   try {
-    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
+    await dbConnect();
     const newRecord = new MedicalRecord({
       recordId: `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       patient: abhaId,
@@ -146,7 +192,7 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
   }
 
   try {
-    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY
+    await dbConnect();
     const dataBuffer = fs.readFileSync(path.join(uploadsDir, file.filename));
     const pdfData = await pdf(dataBuffer);
 
@@ -182,7 +228,6 @@ router.post('/reports/upload', upload.single('reportFile'), async (req, res) => 
 // -----------------------
 
 router.post('/summarize', async (req, res) => {
-  // This route does not access the database, so no dbConnect() is needed.
   const { medicalRecords } = req.body;
   if (!medicalRecords || medicalRecords.length === 0) {
     return res.status(400).json({ error: 'Medical records are required.' });
@@ -204,7 +249,7 @@ router.post('/summarize', async (req, res) => {
 
 router.post('/chat', async (req, res) => {
   try {
-    await dbConnect(); // ✅ ENSURE DB CONNECTION IS READY (might be needed for fallback)
+    await dbConnect();
     const { abhaId, medicalRecords, reportsAndScans, question } = req.body;
     if (!question) return res.status(400).json({ error: 'A question is required.' });
 
@@ -219,7 +264,6 @@ router.post('/chat', async (req, res) => {
       reports = patient.reportsAndScans || [];
     }
     
-    // The rest of this function remains unchanged...
     if (!records || records.length === 0) {
       return res.status(400).json({ error: 'No medical records provided or found for this ABHA ID.' });
     }
@@ -283,7 +327,6 @@ router.post('/chat', async (req, res) => {
 });
 
 router.post('/blueprint', async (req, res) => {
-  // This route does not access the database, so no dbConnect() is needed.
   const { medicalRecords } = req.body;
   if (!medicalRecords || medicalRecords.length === 0) {
     return res.status(400).json({ error: 'Medical records are required.' });

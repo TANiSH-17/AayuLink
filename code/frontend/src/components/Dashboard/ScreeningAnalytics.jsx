@@ -1,10 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from "react";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  LineChart, Line, PieChart, Pie, Cell, Legend
-} from 'recharts';
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  AreaChart,
+  Area,
+} from "recharts";
+import { motion } from "framer-motion";
+import { TrendingUp, Activity, TestTube } from "lucide-react";
 
-// simple deterministic generator so the charts look stable every reload
+// --- Seeded Random for stable mock data ---
 function makeSeededRand(seed = 42) {
   let s = seed;
   return () => {
@@ -13,126 +22,239 @@ function makeSeededRand(seed = 42) {
   };
 }
 
-export default function ScreeningAnalytics() {
-  const { barData, lineData, pieData } = useMemo(() => {
-    // BAR: screenings per day (last 14 days)
-    const randBar = makeSeededRand(7);
-    const now = new Date();
-    const barData = Array.from({ length: 14 }).map((_, idx) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (13 - idx));
-      const label = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-      const total = Math.floor(randBar() * 120) + 40; // 40..160
-      return { day: label, screenings: total };
-    });
+// --- Custom Tooltip ---
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg p-3 text-sm">
+        <p className="font-bold text-slate-800 mb-1">{label}</p>
+        {payload.map((pld, i) => (
+          <div key={i} style={{ color: pld.color }}>
+            {`${pld.name}: ${pld.value.toFixed(1)}${pld.unit || ""}`}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
-    // LINE: positive % over last 30 days
-    const randLine = makeSeededRand(21);
-    const lineData = Array.from({ length: 30 }).map((_, idx) => {
+// --- KPI Card ---
+const KpiCard = ({ title, value, icon, color }) => (
+  <motion.div
+    whileHover={{ scale: 1.03 }}
+    className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex items-start gap-4 hover:shadow-md transition-all"
+  >
+    <div
+      className={`flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-xl ${color.bg}`}
+    >
+      {React.cloneElement(icon, { className: `h-6 w-6 ${color.text}` })}
+    </div>
+    <div>
+      <div className="text-sm font-medium text-slate-500">{title}</div>
+      <div className="text-3xl font-bold text-slate-800 mt-1">{value}</div>
+    </div>
+  </motion.div>
+);
+
+// --- Pathogen List ---
+const PathogenList = ({ data, colors }) => (
+  <div className="space-y-3">
+    {data.map((entry, index) => {
+      const total = data.reduce((acc, curr) => acc + curr.value, 0);
+      const percentage = (entry.value / total) * 100;
+      return (
+        <div key={entry.name}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-semibold text-slate-700">{entry.name}</span>
+            <span className="text-slate-500">{percentage.toFixed(0)}%</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <motion.div
+              className="h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 0.8, delay: index * 0.1 }}
+              style={{ backgroundColor: colors[index % colors.length] }}
+            />
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
+
+export default function ScreeningAnalytics() {
+  const [timeRange, setTimeRange] = useState(30);
+
+  const { dailyData, pathogenData, kpiValues } = useMemo(() => {
+    const rand = makeSeededRand(1337);
+    const now = new Date();
+
+    const fullDailyData = Array.from({ length: 30 }).map((_, idx) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (29 - idx));
-      const label = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-      const pct = Math.round((0.08 + randLine() * 0.22) * 1000) / 10; // 8%..30%
-      return { day: label, positivePct: pct };
+      const label = d.toLocaleDateString("en-IN", {
+        month: "short",
+        day: "numeric",
+      });
+      return {
+        day: label,
+        screenings: Math.floor(rand() * 120) + 40,
+        positivePct: Math.round((0.08 + rand() * 0.22) * 1000) / 10,
+      };
     });
 
-    // PIE: pathogen distribution
-    const raw = { MRSA: 36, CRE: 22, ESBL: 18, VRE: 9, Others: 15 };
-    const pieData = Object.entries(raw).map(([name, value]) => ({ name, value }));
+    const rawPathogens = { MRSA: 36, CRE: 22, ESBL: 18, VRE: 9, Others: 15 };
+    const pathogenData = Object.entries(rawPathogens).map(([name, value]) => ({
+      name,
+      value,
+    }));
 
-    return { barData, lineData, pieData };
+    const kpiValues = {
+      totalScreenings: fullDailyData
+        .slice(-7)
+        .reduce((a, b) => a + b.screenings, 0),
+      avgPositive: Math.round(
+        fullDailyData.reduce((a, b) => a + b.positivePct, 0) /
+          fullDailyData.length
+      ),
+      topPathogen: pathogenData[0].name,
+    };
+
+    return { dailyData: fullDailyData, pathogenData, kpiValues };
   }, []);
 
-  const PIE_COLORS = ['#ef4444', '#6366f1', '#10b981', '#f59e0b', '#0ea5e9'];
+  const visibleData = dailyData.slice(-timeRange);
+  const PATHOGEN_COLORS = ["#14b8a6", "#06b6d4", "#3b82f6", "#22c55e", "#f59e0b"];
 
   return (
-    <div className="space-y-6">
-      {/* KPI strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl shadow p-5">
-          <div className="text-xs text-slate-500">Screenings (7 days)</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">
-            {barData.slice(-7).reduce((a,b)=>a+b.screenings,0)}
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow p-5">
-          <div className="text-xs text-slate-500">Avg. Positive % (30 days)</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">
-            {Math.round(lineData.reduce((a,b)=>a+b.positivePct,0)/lineData.length)}%
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow p-5">
-          <div className="text-xs text-slate-500">Top Pathogen</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">
-            MRSA
-          </div>
+    <div className="space-y-8 bg-gradient-to-br from-[#f9fbfc] to-[#eef7f9] rounded-3xl p-6">
+      {/* --- Title & Range Filter --- */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-[#0b3c5d]">
+          National Screening Analytics
+        </h2>
+        <div className="flex items-center bg-slate-100 p-1 rounded-lg shadow-inner">
+          {[7, 14, 30].map((days) => (
+            <button
+              key={days}
+              onClick={() => setTimeRange(days)}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${
+                timeRange === days
+                  ? "bg-white text-[#0b3c5d] shadow-sm"
+                  : "text-slate-600 hover:bg-white/70"
+              }`}
+            >
+              {days} Days
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Bar + Line */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Screenings per Day</h3>
-          </div>
-          <div className="h-[320px]">
+      {/* --- KPI Cards --- */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <KpiCard
+          title="Screenings (Last 7 days)"
+          value={kpiValues.totalScreenings}
+          icon={<Activity />}
+          color={{ bg: "bg-cyan-100", text: "text-cyan-600" }}
+        />
+        <KpiCard
+          title="Avg. Positive % (30 days)"
+          value={`${kpiValues.avgPositive}%`}
+          icon={<TrendingUp />}
+          color={{ bg: "bg-emerald-100", text: "text-emerald-600" }}
+        />
+        <KpiCard
+          title="Top Pathogen"
+          value={kpiValues.topPathogen}
+          icon={<TestTube />}
+          color={{ bg: "bg-rose-100", text: "text-rose-600" }}
+        />
+      </div>
+
+      {/* --- Charts Row --- */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Screenings per Day */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"
+        >
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            Screenings per Day
+          </h3>
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="screenings" radius={[6, 6, 0, 0]} />
+              <BarChart data={visibleData} syncId="analyticsSync">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f0fdfa" }} />
+                <Bar
+                  dataKey="screenings"
+                  name="Screenings"
+                  fill="#14b8a6"
+                  radius={[4, 4, 0, 0]}
+                  barSize={18}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-2xl shadow p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">MDR Positive % (Last 30 Days)</h3>
-          </div>
-          <div className="h-[320px]">
+        {/* MDR Positive % */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"
+        >
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            MDR Positive %
+          </h3>
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineData} margin={{ right: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis unit="%" tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="positivePct" dot={false} strokeWidth={2.5} />
-              </LineChart>
+              <AreaChart data={visibleData} syncId="analyticsSync">
+                <defs>
+                  <linearGradient id="colorPositive" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis unit="%" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f0fdfa" }} />
+                <Area
+                  type="monotone"
+                  dataKey="positivePct"
+                  name="Positive Rate"
+                  stroke="#06b6d4"
+                  fill="url(#colorPositive)"
+                  strokeWidth={2.5}
+                  dot={false}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Pie */}
-      <div className="bg-white rounded-2xl shadow p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold">Pathogen Distribution</h3>
-        </div>
-        <div className="h-[320px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                outerRadius={110}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend />
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* --- Pathogen Distribution --- */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"
+      >
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          Pathogen Distribution
+        </h3>
+        <PathogenList data={pathogenData} colors={PATHOGEN_COLORS} />
+      </motion.div>
     </div>
   );
 }
