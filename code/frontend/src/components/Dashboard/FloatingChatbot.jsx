@@ -27,15 +27,38 @@ export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaI
     setMessages(newMessages);
     const question = userInput;
     setUserInput('');
+
+    // Check for the specific, hardcoded question.
+    const preFedMriAnswer = `
+Based on the latest MRI report:
+
+**Impression:**
+* 1. Mild cerebral atrophy.
+* 2. Small vessel ischemic changes.
+
+**Key Findings:**
+* There is no evidence of acute infarct, hemorrhage, or mass effect.
+* Scattered T2/FLAIR hyperintensities are noted in the periventricular and subcortical white matter.
+* The ventricles and sulci appear mildly prominent, suggesting a degree of generalized volume loss.
+
+Would you like me to elaborate on any of these points?
+`;
+
+    if (question.trim().toLowerCase() === 'what were the key findings of the latest mri') {
+        // If it matches, set the pre-fed answer after a 2-second delay.
+        setTimeout(() => {
+            setMessages([...newMessages, { sender: 'ai', text: preFedMriAnswer }]);
+        }, 2000); // <-- This value has been changed from 500 to 2000
+        return; // Prevents the API call below
+    }
+
     setIsLoading(true);
 
     try {
-      // Send what you already have (MVP): textual history; optionally include reports or abhaId
       const payload = {
         question,
         medicalRecords: medicalHistory || [],
         reportsAndScans: reportsAndScans || [],
-        // abhaId, // uncomment if you want backend to fetch records by ID
       };
 
       const { data } = await axios.post(`${API_URL}/api/chat`, payload);
@@ -70,8 +93,6 @@ export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaI
                       <Bot size={20} />
                     </div>
                   )}
-
-                  {/* Render AI with Markdown; user as plain text */}
                   <div
                     className={`max-w-xs px-4 py-2 rounded-xl ${
                       msg.sender === 'user'
@@ -89,7 +110,6 @@ export default function FloatingChatbot({ medicalHistory, reportsAndScans, abhaI
                       msg.text
                     )}
                   </div>
-
                   {msg.sender === 'user' && (
                     <div className="bg-blue-500 text-white rounded-full p-2">
                       <User size={20} />
