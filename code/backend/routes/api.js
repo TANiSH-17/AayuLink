@@ -16,8 +16,12 @@ const { protect, admin } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // --- AI Model Initialization ---
+// --- AI Model Initialization (Updated 2025-10) ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// ✅ Use stable "latest" alias to avoid version mismatches
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
 
 // --- UPLOADS PATH (absolute) ---
 const uploadsDir = path.resolve(__dirname, '../uploads');

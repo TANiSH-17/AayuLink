@@ -44,9 +44,9 @@ function HeaderInline({ onValidatorClick }) {
 
   const handleScrollTo = (id) => {
     scroller.scrollTo(id, {
-      duration: 500,
+      duration: 0,
       smooth: "easeInOutQuart",
-      offset: -80, 
+      offset: -80,
     });
     setIsMenuOpen(false);
   };
@@ -81,11 +81,9 @@ function HeaderInline({ onValidatorClick }) {
                 onClick={() => handleScrollTo(link.id)}
                 className="relative text-base font-medium text-muted-foreground transition-all duration-300 group"
               >
-                {/* Link label */}
                 <span className="hover:text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-300">
                   {link.label}
                 </span>
-                {/* Animated underline */}
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full transition-all duration-300 group-hover:w-full"></span>
               </button>
             ))}
@@ -104,7 +102,7 @@ function HeaderInline({ onValidatorClick }) {
           <div className="hidden lg:flex items-center gap-4">
             <button
               onClick={() => handleScrollTo("auth")}
-              className="px-6 py-3 bg-gradient-to-r from-red-300 to-red-400 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
+              className="px-6 py-3 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
             >
               Emergency Login
             </button>
@@ -149,7 +147,7 @@ function HeaderInline({ onValidatorClick }) {
           </button>
           <button
             onClick={() => handleScrollTo("auth")}
-            className="mt-4 px-8 py-3 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
+            className="mt-4 px-8 py-3 bg-gradient-to-r from-red-500 to-red-700 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
           >
             Emergency Login
           </button>
@@ -158,6 +156,7 @@ function HeaderInline({ onValidatorClick }) {
     </header>
   );
 }
+
 
 
 function HeroInline({ onGetStartedClick }) {
