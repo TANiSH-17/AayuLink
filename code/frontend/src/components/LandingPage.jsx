@@ -380,339 +380,6 @@ function WhatIsAayulinkInline() {
 }
 
 
-function HealthcareChallengeInline() {
-  const problems = [
-    {
-      icon: FileText,
-      title: "Scattered Medical Records",
-      description:
-        "Your health data is fragmented across multiple hospitals, making emergency access difficult.",
-    },
-    {
-      icon: Clock,
-      title: "Time-Critical Delays",
-      description:
-        "Emergency care can be slowed down by lengthy processes to gather medical history.",
-    },
-    {
-      icon: AlertTriangle,
-      title: "Hidden MDR Risks",
-      description:
-        "Multi-drug resistant (MDR) infections can go unnoticed without unified tracking across providers.",
-    },
-  ];
-
-  const solutions = [
-    {
-      icon: User,
-      title: "Unified Health Identity",
-      description:
-        "A single health ID linking your entire medical history and MDR insights securely in one place.",
-    },
-    {
-      icon: Zap,
-      title: "Faster Emergency Access",
-      description:
-        "Critical health data and MDR indicators are instantly accessible to doctors with your consent.",
-    },
-    {
-      icon: Heart,
-      title: "Smarter, Safer Care",
-      description:
-        "Each visit updates your records, helping prevent duplicate prescriptions and reduce MDR risks.",
-    },
-  ];
-
-  return (
-    <section className="pt-24 bg-gradient-to-b from-background/95 via-muted/20 to-background relative overflow-hidden">
-      {/* Enhanced particle-like background */}
-      <div className="absolute inset-0 overflow-hidden opacity-15">
-        <svg
-          className="absolute w-full h-full"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <defs>
-            <radialGradient id="particleGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#15803d" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {[...Array(35)].map((_, i) => (
-            <circle
-              key={i}
-              cx={Math.random() * 100 + "%"}
-              cy={Math.random() * 100 + "%"}
-              r={Math.random() * 50 + 15}
-              fill="url(#particleGradient)"
-            />
-          ))}
-        </svg>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Header */}
-        <motion.div
-          className="text-center mb-20"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            The Healthcare &{" "}
-            <span className="bg-hero-gradient bg-clip-text text-transparent">
-              MDR
-            </span>{" "}
-            Challenge We’re Solving
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            AayuLink bridges the healthcare gap — uniting your medical records,
-            MDR awareness, and trusted care under one digital identity.
-          </p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Problems */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-8">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-              <h3 className="text-2xl font-bold text-red-600">
-                Current Problems
-              </h3>
-            </div>
-            {problems.map((p, i) => {
-              const Icon = p.icon;
-              return (
-                <motion.div
-                  key={i}
-                  className="bg-card border border-red-200/50 rounded-2xl hover:shadow-xl hover:scale-[1.02] transition-all duration-300 p-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <div className="flex gap-4 items-center">
-                    <div className="bg-red-50 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-6 h-6 text-red-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-lg text-foreground">
-                        {p.title}
-                      </h4>
-                      <p className="text-muted-foreground">{p.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Solutions */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-8">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <h3 className="text-2xl font-bold text-green-600">
-                AayuLink Solutions
-              </h3>
-            </div>
-            {solutions.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <motion.div
-                  key={i}
-                  className="bg-card border border-green-200/50 rounded-2xl hover:shadow-xl hover:scale-[1.02] transition-all duration-300 p-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 + 0.3 }}
-                >
-                  <div className="flex gap-4 items-center">
-                    <div className="bg-green-50 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-lg text-foreground">
-                        {s.title}
-                      </h4>
-                      <p className="text-muted-foreground">{s.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
-function NetworkSectionInline() {
-  const mockHospitals = [
-    { name: "Fortis Healthcare", city: "Mumbai", specialty: "Oncology", patientsServed: "22,000+" },
-    { name: "Kokilaben Hospital", city: "Mumbai", specialty: "Multi-specialty", patientsServed: "15,000+" },
-    { name: "Apollo Hospitals", city: "Delhi", specialty: "Cardiology", patientsServed: "35,000+" },
-    { name: "Max Healthcare", city: "Delhi", specialty: "Neurology", patientsServed: "28,000+" },
-    { name: "Manipal Hospital", city: "Bengaluru", specialty: "Transplants", patientsServed: "18,000+" },
-    { name: "Narayana Health", city: "Bengaluru", specialty: "Cardiac Sciences", patientsServed: "40,000+" },
-    { name: "Gleneagles Global", city: "Chennai", specialty: "Hepatology", patientsServed: "12,000+" },
-    { name: "MIOT International", city: "Chennai", specialty: "Orthopaedics", patientsServed: "16,000+" },
-  ];
-
-  const cities = useMemo(() => ["All", ...new Set(mockHospitals.map((h) => h.city))], []);
-  const [selectedCity, setSelectedCity] = useState("All");
-  const filteredHospitals = useMemo(() => {
-    if (selectedCity === "All") return mockHospitals;
-    return mockHospitals.filter((h) => h.city === selectedCity);
-  }, [selectedCity, mockHospitals]);
-
-  const HospitalCard = ({ hospital, index }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="bg-white/70 backdrop-blur-lg border border-accent/10 rounded-xl p-5 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
-    >
-      <div className="flex items-center gap-4">
-        <div className="bg-accent/10 p-3 rounded-xl">
-          <Building2 className="w-6 h-6 text-accent" />
-        </div>
-        <div className="flex-grow">
-          <h4 className="font-semibold text-foreground">{hospital.name}</h4>
-          <p className="text-sm text-muted-foreground">
-            {hospital.city} • {hospital.specialty}
-          </p>
-          <p className="text-sm font-medium text-accent mt-1">
-            {hospital.patientsServed} patients served
-          </p>
-        </div>
-        <Dot className="text-green-500 w-10 h-10 -m-3 animate-pulse" />
-      </div>
-    </motion.div>
-  );
-
-  const StatCard = ({ value, label }) => (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      className="bg-white/70 backdrop-blur-lg border border-accent/10 rounded-xl p-5 text-center shadow-sm"
-    >
-      <p className="text-3xl font-bold text-primary">{value}</p>
-      <p className="text-sm text-muted-foreground">{label}</p>
-    </motion.div>
-  );
-
-  return (
-    <section className="relative py-24 overflow-hidden bg-gradient-to-b from-background via-muted/20 to-background">
-      {/* Soft floating background blobs */}
-      <div className="absolute -top-40 -left-32 w-[600px] h-[600px] bg-accent/15 rounded-full blur-[180px] opacity-60 animate-pulse" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-[160px] opacity-50 animate-pulse delay-500" />
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Header */}
-        <motion.div
-          className="text-center mb-20"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full mb-4 text-sm">
-            <MapPin className="w-4 h-4" /> Pan-India Coverage
-          </div>
-          <h2 className="text-5xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
-            Connected{" "}
-            <span className="bg-hero-gradient bg-clip-text text-transparent">
-              Hospital Network
-            </span>
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            AayuLink connects over <span className="font-semibold text-primary">5,000+ hospitals</span> across India, enabling instant, secure health data sharing and emergency readiness.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* India Map */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="relative rounded-2xl overflow-hidden shadow-lg border border-accent/20 bg-white/60 backdrop-blur-md"
-          >
-            <img
-              src="/images/indiamap.jpg"
-              alt="India network map"
-              className="w-full object-cover opacity-90"
-            />
-            <div className="absolute top-6 left-6 bg-white/90 text-slate-800 px-4 py-2 rounded-xl shadow-md flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              <span className="font-semibold">5,247 Hospitals Connected</span>
-            </div>
-            <div className="absolute bottom-6 right-6 bg-white/90 px-4 py-3 rounded-xl shadow-md text-center">
-              <p className="text-4xl font-bold text-primary">99.9%</p>
-              <p className="text-xs text-muted-foreground font-medium">
-                Network Uptime
-              </p>
-            </div>
-
-            {/* Subtle glowing connection points */}
-            <div className="absolute inset-0">
-              <div className="absolute top-[40%] left-[45%] w-3 h-3 bg-green-400 rounded-full animate-ping opacity-70" />
-              <div className="absolute top-[55%] left-[60%] w-3 h-3 bg-accent rounded-full animate-ping delay-200 opacity-60" />
-              <div className="absolute top-[30%] left-[70%] w-3 h-3 bg-primary rounded-full animate-ping delay-500 opacity-60" />
-            </div>
-          </motion.div>
-
-          {/* Hospital list + stats */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Filter by City
-            </label>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full p-3 rounded-lg border border-accent/20 bg-white/70 backdrop-blur-md text-foreground focus:ring-2 focus:ring-accent outline-none transition-all"
-            >
-              {cities.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
-
-            <div className="space-y-4 h-[330px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-accent/40 mt-4">
-              {filteredHospitals.length ? (
-                filteredHospitals.map((hospital, i) => (
-                  <HospitalCard key={hospital.name} hospital={hospital} index={i} />
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                  <Search className="w-10 h-10 mb-3" />
-                  <p className="font-semibold text-lg">No Hospitals Found</p>
-                  <p className="text-sm">
-                    No hospitals listed for “{selectedCity}”.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              <StatCard value="24/7" label="Emergency Access" />
-              <StatCard value="5,247+" label="Connected Hospitals" />
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
 function AboutAndMDRSection() {
   const mdrStats = [
     {
@@ -879,104 +546,495 @@ function AboutAndMDRSection() {
 }
 
 
-function AuthPanelInline({ onLogin, onSignUp, authError }) {
-    const { t } = useLanguage(); 
-    const [role, setRole] = useState("individual");
-    const [mode, setMode] = useState("login");
-    const [formData, setFormData] = useState({ username: "", password: "", confirmPassword: "", hospitalName: "", specialCode: "" });
-    const [isLoading, setIsLoading] = useState(false);
-    const [formError, setFormError] = useState("");
-    const [successMessage, setSuccessMessage] = useState("");
+function HealthcareNetworkUnified() {
+  const problems = [
+    {
+      icon: FileText,
+      title: "Scattered Medical Records",
+      description:
+        "Your health data is fragmented across hospitals, delaying critical access during emergencies.",
+    },
+    {
+      icon: Clock,
+      title: "Time-Critical Delays",
+      description:
+        "Doctors waste precious minutes retrieving past reports, impacting urgent care decisions.",
+    },
+    {
+      icon: AlertTriangle,
+      title: "Hidden MDR Risks",
+      description:
+        "Multi-drug resistant (MDR) infections go unnoticed without unified cross-provider data.",
+    },
+  ];
 
-    const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const solutions = [
+    {
+      icon: User,
+      title: "Unified Health Identity",
+      description:
+        "Your ABHA-powered health ID links medical history and MDR insights in one secure record.",
+    },
+    {
+      icon: Zap,
+      title: "Faster Emergency Access",
+      description:
+        "With consent, doctors instantly access your verified records and MDR indicators for faster care.",
+    },
+    {
+      icon: Heart,
+      title: "Smarter, Safer Care",
+      description:
+        "Each visit updates your digital health twin — reducing duplicate prescriptions and MDR risks.",
+    },
+  ];
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setIsLoading(true);
-      setFormError(""); 
-      setSuccessMessage("");
+  const mockHospitals = [
+    { name: "Fortis Healthcare", city: "Mumbai", specialty: "Oncology", patientsServed: "22,000+" },
+    { name: "Kokilaben Hospital", city: "Mumbai", specialty: "Multi-specialty", patientsServed: "15,000+" },
+    { name: "Apollo Hospitals", city: "Delhi", specialty: "Cardiology", patientsServed: "35,000+" },
+    { name: "Max Healthcare", city: "Delhi", specialty: "Neurology", patientsServed: "28,000+" },
+    { name: "Manipal Hospital", city: "Bengaluru", specialty: "Transplants", patientsServed: "18,000+" },
+    { name: "Narayana Health", city: "Bengaluru", specialty: "Cardiac Sciences", patientsServed: "40,000+" },
+    { name: "Gleneagles Global", city: "Chennai", specialty: "Hepatology", patientsServed: "12,000+" },
+    { name: "MIOT International", city: "Chennai", specialty: "Orthopaedics", patientsServed: "16,000+" },
+  ];
 
-      if (mode === "signup") {
-        if (formData.password !== formData.confirmPassword) {
-          setFormError("Passwords do not match. Please try again.");
-          setIsLoading(false);
-          return;
-        }
-        
-        const isSuccess = await onSignUp(formData.username, formData.password, role, formData.hospitalName, formData.specialCode);
-        
-        if (isSuccess) {
-          setSuccessMessage("Registration successful! Redirecting to login...");
-          setTimeout(() => {
-            setMode("login");
-            setSuccessMessage("");
-            setFormData({ ...formData, password: '', confirmPassword: '' });
-            setIsLoading(false); 
-          }, 2000);
-        } else {
-          setIsLoading(false); 
-        }
-      } else { 
-        await onLogin(formData.username, formData.password, role);
-        setIsLoading(false);
-      }
-    };
+  const cities = useMemo(() => ["All", ...new Set(mockHospitals.map((h) => h.city))], []);
+  const [selectedCity, setSelectedCity] = useState("All");
+  const [activePulse, setActivePulse] = useState(null);
 
-    const cleanUpState = () => {
-        setFormError("");
-        setSuccessMessage("");
-    };
+  const filteredHospitals = useMemo(() => {
+    if (selectedCity === "All") return mockHospitals;
+    return mockHospitals.filter((h) => h.city === selectedCity);
+  }, [selectedCity, mockHospitals]);
 
-    return (
-      <section id="auth" className="py-24 bg-gray-50">
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            <span className="text-green-600">{t.oneNationOneHealth.split(", ")[0]},</span>{" "}
-            {t.oneNationOneHealth.split(", ")[1]}
+  useEffect(() => {
+    let idx = 0;
+    const interval = setInterval(() => {
+      setActivePulse(idx);
+      idx = (idx + 1) % filteredHospitals.length;
+    }, 800);
+    return () => clearInterval(interval);
+  }, [filteredHospitals]);
+
+  const StatCard = ({ value, label }) => (
+    <div className="bg-card border border-border p-4 rounded-xl text-center transition-all hover:shadow-lg hover:scale-105">
+      <p className="text-3xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+        {value}
+      </p>
+      <p className="text-sm text-muted-foreground mt-1">{label}</p>
+    </div>
+  );
+
+  const HospitalCard = ({ hospital, index }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="bg-card border border-border p-4 rounded-xl flex items-center gap-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+    >
+      <div className="bg-primary/10 p-3 rounded-lg">
+        <Building2 className="w-6 h-6 text-primary" />
+      </div>
+      <div className="flex-grow">
+        <h4 className="font-bold text-foreground">{hospital.name}</h4>
+        <p className="text-sm text-muted-foreground">
+          {hospital.city} • {hospital.specialty}
+        </p>
+        <p className="text-sm font-semibold text-primary mt-1">
+          {hospital.patientsServed} patients served
+        </p>
+      </div>
+      <Dot size={40} className="text-green-500" />
+    </motion.div>
+  );
+
+  return (
+    <section className="py-28 relative overflow-hidden bg-gradient-to-b from-background via-muted/10 to-background">
+      {/* Shared glowing network background */}
+      <div className="absolute inset-0 opacity-60">
+        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="unifiedGradient" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          {[...Array(40)].map((_, i) => {
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            return (
+              <circle
+                key={i}
+                cx={`${x}%`}
+                cy={`${y}%`}
+                r={activePulse === i % filteredHospitals.length ? 20 : 10}
+                fill="url(#unifiedGradient)"
+                className={`transition-all duration-700 ${
+                  activePulse === i % filteredHospitals.length ? "opacity-100" : "opacity-40"
+                }`}
+              />
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        {/* 1️⃣ Healthcare Challenge Section */}
+        <motion.div
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+            The Healthcare &{" "}
+            <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+              MDR
+            </span>{" "}
+            Challenge
           </h2>
-          <p className="text-gray-500 leading-relaxed max-w-prose mx-auto mb-10">{t.tagline}</p>
-          <div className="bg-white p-6 rounded-2xl shadow-lg border text-left">
-            <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
-              <button 
-                onClick={() => { setRole("individual"); cleanUpState(); }} 
-                className={`flex-1 text-center p-2 rounded-md font-semibold text-sm transition-colors ${role === "individual" ? "bg-white shadow" : "text-gray-500"}`}
-              >
-                {t.individual}
-              </button>
-              <button 
-                onClick={() => { setRole("admin"); cleanUpState(); }} 
-                className={`flex-1 text-center p-2 rounded-md font-semibold text-sm transition-colors ${role === "admin" ? "bg-white shadow" : "text-gray-500"}`}
-              >
-                {t.admin}
-              </button>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            AayuLink bridges fragmented healthcare and MDR awareness through connected data intelligence.
+          </p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-12 mb-28">
+          {/* Problems */}
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <AlertCircle className="w-6 h-6 text-red-500" />
+              <h3 className="text-2xl font-semibold text-red-500">Current Problems</h3>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Field name="username" label="Username" type="text" placeholder="Enter your username" icon={User} value={formData.username} onChange={handleInputChange} required />
-              <Field name="password" label="Password" type="password" placeholder="Enter your password" icon={Shield} value={formData.password} onChange={handleInputChange} required />
-              {mode === 'signup' && (
-                <Field name="confirmPassword" label="Confirm Password" type="password" placeholder="Re-enter your password" icon={Shield} value={formData.confirmPassword} onChange={handleInputChange} required />
-              )}
-              {role === "admin" && mode === "signup" && (
-                <>
-                  <Field name="hospitalName" label="Hospital Name" type="text" placeholder="e.g., Apollo Hospital, Mumbai" icon={HospitalIcon} value={formData.hospitalName} onChange={handleInputChange} required />
-                  <Field name="specialCode" label="Special Hospital Code" type="text" placeholder="e.g., APOLLO-MUM-01" icon={Building} value={formData.specialCode} onChange={handleInputChange} required />
-                </>
-              )}
-              {successMessage && <p className="text-sm text-green-600 text-center pt-2">{successMessage}</p>}
-              {(authError || formError) && <p className="text-sm text-red-600 text-center pt-2">{authError || formError}</p>}
-              <button type="submit" disabled={isLoading} className="w-full rounded-lg font-bold py-3 px-4 bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 transition-colors mt-4">
-                {isLoading ? "Processing..." : (mode === "login" ? "Login" : "Sign Up")}
-              </button>
-            </form>
-            <p className="text-xs text-gray-500 text-center mt-4">
-              {mode === "login" ? "Don't have an account?" : "Already have an account?"}
-              <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); cleanUpState(); }} className="font-semibold text-green-600 hover:underline ml-1">{mode === "login" ? "Sign Up" : "Login"}</button>
-            </p>
+            <div className="space-y-6">
+              {problems.map((p, i) => {
+                const Icon = p.icon;
+                return (
+                  <motion.div
+                    key={i}
+                    className="bg-card border border-red-200/50 rounded-2xl p-6 hover:shadow-lg hover:scale-[1.02] transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="bg-red-50 w-12 h-12 flex items-center justify-center rounded-xl">
+                        <Icon className="w-6 h-6 text-red-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg">{p.title}</h4>
+                        <p className="text-muted-foreground">{p.description}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Solutions */}
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+              <h3 className="text-2xl font-semibold text-green-500">AayuLink Solutions</h3>
+            </div>
+            <div className="space-y-6">
+              {solutions.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <motion.div
+                    key={i}
+                    className="bg-card border border-green-200/50 rounded-2xl p-6 hover:shadow-lg hover:scale-[1.02] transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 + 0.3 }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="bg-green-50 w-12 h-12 flex items-center justify-center rounded-xl">
+                        <Icon className="w-6 h-6 text-green-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg">{s.title}</h4>
+                        <p className="text-muted-foreground">{s.description}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </section>
-    );
+
+        {/* 2️⃣ Connected Network Section */}
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium mb-4 text-sm">
+            Real-Time Healthcare Connectivity
+          </div>
+          <h2 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
+            AayuLink{" "}
+            <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+              Network Grid
+            </span>
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            A living ecosystem of connected hospitals, clinics, and patients — synchronizing real-time medical and MDR insights across India.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div className="relative bg-slate-900/90 border border-teal-700/30 rounded-2xl p-6 shadow-xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-blue-500/10 to-transparent animate-pulse" />
+            <div className="relative z-10">
+            {/* Header with subtle gradient glow */}
+            <h3 className="text-2xl md:text-3xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500">
+              Live Data Sync <span className="inline-block animate-pulse-dot">•</span>
+            </h3>
+
+            {/* Description */}
+            <p className="text-sm md:text-base text-blue-100 mb-6 leading-relaxed">
+              Each node in the AayuLink grid represents a verified healthcare provider, exchanging real-time patient data and MDR intelligence securely, ensuring faster, safer, and smarter care.
+            </p>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+              <StatCard value="5,247" label="Connected Hospitals" />
+              <StatCard value="99.9%" label="Uptime" />
+              <StatCard value="2.4M+" label="Records Synced" />
+              <StatCard value="24/7" label="Emergency Access" />
+            </div>
+
+            <style>
+              {`
+                .animate-pulse-dot {
+                  display: inline-block;
+                  width: 0.5rem;
+                  height: 0.5rem;
+                  border-radius: 9999px;
+                  background-color: #22c55e;
+                  margin-left: 0.5rem;
+                  animation: pulse 1.2s infinite;
+                }
+
+                @keyframes pulse {
+                  0%, 100% { transform: scale(1); opacity: 1; }
+                  50% { transform: scale(1.5); opacity: 0.5; }
+                }
+              `}
+            </style>
+          </div>
+
+          </div>
+
+          <div>
+            <div className="relative mb-4">
+              <label
+                htmlFor="city-filter"
+                className="block text-sm font-medium text-muted-foreground mb-1"
+              >
+                Filter by City
+              </label>
+              <select
+                id="city-filter"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full p-3 rounded-lg border border-input bg-card text-foreground appearance-none pr-10"
+              >
+                {cities.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-3 h-[340px] overflow-y-auto pr-2">
+              {filteredHospitals.map((hospital, index) => (
+                <HospitalCard key={hospital.name} hospital={hospital} index={index} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
+
+
+function AuthPanelInline({ onLogin, onSignUp, authError }) {
+  const { t } = useLanguage(); 
+  const [role, setRole] = useState("individual");
+  const [mode, setMode] = useState("login");
+  const [formData, setFormData] = useState({ username: "", password: "", confirmPassword: "", hospitalName: "", specialCode: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setFormError(""); 
+    setSuccessMessage("");
+
+    if (mode === "signup") {
+      if (formData.password !== formData.confirmPassword) {
+        setFormError("Passwords do not match. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const isSuccess = await onSignUp(formData.username, formData.password, role, formData.hospitalName, formData.specialCode);
+      
+      if (isSuccess) {
+        setSuccessMessage("Registration successful! Redirecting to login...");
+        setTimeout(() => {
+          setMode("login");
+          setSuccessMessage("");
+          setFormData({ ...formData, password: '', confirmPassword: '' });
+          setIsLoading(false); 
+        }, 2000);
+      } else {
+        setIsLoading(false); 
+      }
+    } else { 
+      await onLogin(formData.username, formData.password, role);
+      setIsLoading(false);
+    }
+  };
+
+  const cleanUpState = () => {
+    setFormError("");
+    setSuccessMessage("");
+  };
+
+  return (
+    <section id="auth" className="py-24 bg-gradient-to-b from-background/95 via-muted/10 to-background">
+      <div className="max-w-xl mx-auto px-6 relative z-10">
+        {/* Heading */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-10">
+          <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
+            <span className="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
+              {t.oneNationOneHealth.split(", ")[0]},
+            </span>{" "}
+            {t.oneNationOneHealth.split(", ")[1]}
+          </h2>
+          <p className="text-gray-400 leading-relaxed max-w-prose mx-auto">{t.tagline}</p>
+        </motion.div>
+
+        {/* Glassmorphic Panel */}
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl shadow-xl border border-white/10 p-8">
+          {/* Role Selector */}
+          <div className="flex bg-white/10 rounded-full p-1 mb-6 shadow-inner">
+            {["individual", "admin"].map((r) => (
+              <button
+                key={r}
+                onClick={() => { setRole(r); cleanUpState(); }}
+                className={`flex-1 text-center py-2 font-semibold rounded-full text-sm transition-colors
+                  ${role === r 
+                    ? "bg-gradient-to-r from-teal-400 to-blue-500 text-white shadow-lg scale-105" 
+                    : "text-gray-400 hover:text-black"
+                  }`}
+              >
+                {r === "individual" ? t.individual : t.admin}
+              </button>
+            ))}
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field
+              name="username"
+              label="Username"
+              type="text"
+              placeholder="Enter your username"
+              icon={User}
+              value={formData.username}
+              onChange={handleInputChange}
+              required
+            />
+            <Field
+              name="password"
+              label="Password"
+              type="password"
+              placeholder="Enter your password"
+              icon={Shield}
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+            />
+            {mode === "signup" && (
+              <Field
+                name="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                placeholder="Re-enter your password"
+                icon={Shield}
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                required
+              />
+            )}
+            {role === "admin" && mode === "signup" && (
+              <>
+                <Field
+                  name="hospitalName"
+                  label="Hospital Name"
+                  type="text"
+                  placeholder="e.g., Apollo Hospital, Mumbai"
+                  icon={HospitalIcon}
+                  value={formData.hospitalName}
+                  onChange={handleInputChange}
+                  required
+                />
+                <Field
+                  name="specialCode"
+                  label="Special Hospital Code"
+                  type="text"
+                  placeholder="e.g., APOLLO-MUM-01"
+                  icon={Building}
+                  value={formData.specialCode}
+                  onChange={handleInputChange}
+                  required
+                />
+              </>
+            )}
+
+            {/* Feedback */}
+            {successMessage && <p className="text-center text-green-400 font-medium">{successMessage}</p>}
+            {(authError || formError) && <p className="text-center text-red-500 font-medium">{authError || formError}</p>}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-xl py-3 font-bold bg-gradient-to-r from-teal-400 to-blue-500 text-white hover:from-teal-500 hover:to-blue-600 disabled:opacity-60 shadow-lg transition-all transform hover:scale-105"
+            >
+              {isLoading ? "Processing..." : mode === "login" ? "Login" : "Sign Up"}
+            </button>
+          </form>
+
+          {/* Switch Mode */}
+          <p className="text-xs text-gray-400 text-center mt-4">
+            {mode === "login" ? "Don't have an account?" : "Already have an account?"}
+            <button
+              onClick={() => { setMode(mode === "login" ? "signup" : "login"); cleanUpState(); }}
+              className="ml-1 font-semibold text-gradient bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 hover:underline"
+            >
+              {mode === "login" ? "Sign Up" : "Login"}
+            </button>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 
 
 export default function LandingPage(props) {
@@ -1089,9 +1147,7 @@ export default function LandingPage(props) {
           
           <AboutAndMDRSection />
 
-          <HealthcareChallengeInline />
-          
-          <NetworkSectionInline />
+          <HealthcareNetworkUnified  />
          
           <AuthPanelInline 
             onLogin={onLogin} 
