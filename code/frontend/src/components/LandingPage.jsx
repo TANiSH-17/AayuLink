@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import {
   User, Shield, Building, Hospital as HospitalIcon,
   AlertCircle, CheckCircle, FileText, Clock, AlertTriangle, Zap,
-  Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X,
-  Share2, BrainCircuit, Siren,  Activity, MapPin, Database, Link2, Cloud, HeartPulse, Biohazard, Microscope
+  Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Menu, X, 
+  Activity, Database, HeartPulse, Biohazard, Microscope
 } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLanguage } from "../contexts/LanguageContext.jsx";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
+import { scroller, animateScroll as scroll } from "react-scroll";
+
 
 
 function Field({ name, label, type, placeholder, icon: Icon, value, onChange, required = false }) {
@@ -30,46 +32,127 @@ function HeaderInline({ onValidatorClick }) {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navLinks = [
-    { id: 'features', label: 'Features' },
-    { id: 'network', label: 'Network' },
-    { id: 'about', label: 'About Us' },
+    { id: "features", label: "Features" },
+    { id: "network", label: "Network" },
+    { id: "about", label: "About Us" },
   ];
 
+  const handleScrollTo = (id) => {
+    scroller.scrollTo(id, {
+      duration: 500,
+      smooth: "easeInOutQuart",
+      offset: -80, 
+    });
+    setIsMenuOpen(false);
+  };
+
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ease-in-out ${isScrolled || isMenuOpen ? 'bg-card/95 backdrop-blur-lg shadow-md border-b border-border' : 'bg-transparent border-b border-transparent'}`}>
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ease-in-out ${
+        isScrolled || isMenuOpen
+          ? "bg-card/95 backdrop-blur-lg shadow-lg border-b border-border"
+          : "bg-transparent border-b border-transparent"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-20">
-          <a href="#top" className="flex items-center" onClick={() => setIsMenuOpen(false)}>
-            <img src="/images/aayulink-logo.png" alt="AayuLink Logo" className="h-9 object-contain" />
-          </a>
-          <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
+          {/* Logo */}
+          <button
+            onClick={() => handleScrollTo("top")}
+            className="flex items-center transition-transform duration-300 hover:scale-105"
+          >
+            <img
+              src="/images/aayulink-logo.png"
+              alt="AayuLink Logo"
+              className="h-10 md:h-12 object-contain"
+            />
+          </button>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex flex-1 justify-center items-center gap-10">
             {navLinks.map((link) => (
-              <a key={link.id} href={`#${link.id}`} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">{link.label}</a>
+              <button
+                key={link.id}
+                onClick={() => handleScrollTo(link.id)}
+                className="relative text-base font-medium text-muted-foreground transition-all duration-300 group"
+              >
+                {/* Link label */}
+                <span className="hover:text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-300">
+                  {link.label}
+                </span>
+                {/* Animated underline */}
+                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full transition-all duration-300 group-hover:w-full"></span>
+              </button>
             ))}
-            <button onClick={onValidatorClick} className="text-base font-medium text-muted-foreground hover:text-primary transition-colors duration-200">Pharmacist / Lab Portal</button>
+            <button
+              onClick={onValidatorClick}
+              className="relative text-base font-medium text-muted-foreground transition-all duration-300 group"
+            >
+              <span className="hover:text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-300">
+                Pharmacist / Lab Portal
+              </span>
+              <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full transition-all duration-300 group-hover:w-full"></span>
+            </button>
           </nav>
+
+          {/* Emergency Login */}
           <div className="hidden lg:flex items-center gap-4">
-            <a href="#auth" className="px-6 py-2.5 bg-destructive text-destructive-foreground rounded-full font-semibold hover:bg-destructive/90 transition-colors">Emergency Login</a>
+            <button
+              onClick={() => handleScrollTo("auth")}
+              className="px-6 py-3 bg-gradient-to-r from-red-300 to-red-400 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
+            >
+              Emergency Login
+            </button>
           </div>
+
+          {/* Mobile Hamburger */}
           <div className="lg:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-foreground">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-foreground transition-transform duration-300 hover:scale-110"
+            >
+              {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
           </div>
         </div>
       </div>
-      <div className={`lg:hidden transition-all duration-300 ease-in-out bg-card/95 border-t border-border ${isMenuOpen ? 'max-h-screen py-6' : 'max-h-0'} overflow-hidden`}>
+
+      {/* Mobile Menu */}
+      <div
+        className={`lg:hidden overflow-hidden transition-all duration-400 ease-in-out bg-card/95 border-t border-border ${
+          isMenuOpen ? "max-h-screen py-6" : "max-h-0"
+        }`}
+      >
         <nav className="flex flex-col items-center gap-6">
           {navLinks.map((link) => (
-            <a key={link.id} href={`#${link.id}`} onClick={() => setIsMenuOpen(false)} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">{link.label}</a>
+            <button
+              key={link.id}
+              onClick={() => handleScrollTo(link.id)}
+              className="text-lg font-medium text-muted-foreground hover:text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-300"
+            >
+              {link.label}
+            </button>
           ))}
-          <button onClick={() => { onValidatorClick(); setIsMenuOpen(false); }} className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors">Pharmacist / Lab Portal</button>
-          <a href="#auth" onClick={() => setIsMenuOpen(false)} className="mt-4 px-8 py-3 bg-destructive text-destructive-foreground rounded-full font-semibold">Emergency Login</a>
+          <button
+            onClick={() => {
+              onValidatorClick();
+              setIsMenuOpen(false);
+            }}
+            className="text-lg font-medium text-muted-foreground hover:text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 transition-all duration-300"
+          >
+            Pharmacist / Lab Portal
+          </button>
+          <button
+            onClick={() => handleScrollTo("auth")}
+            className="mt-4 px-8 py-3 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-full font-bold shadow-lg hover:scale-105 hover:shadow-2xl transition-all duration-300"
+          >
+            Emergency Login
+          </button>
         </nav>
       </div>
     </header>
@@ -683,6 +766,7 @@ function HealthcareNetworkUnified() {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* 1️⃣ Healthcare Challenge Section */}
         <motion.div
+          id="network" 
           className="text-center mb-20"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1034,7 +1118,6 @@ function AuthPanelInline({ onLogin, onSignUp, authError }) {
     </section>
   );
 }
-
 
 
 export default function LandingPage(props) {
