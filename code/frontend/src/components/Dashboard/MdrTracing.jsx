@@ -49,6 +49,13 @@ const Button = ({ icon: Icon, children, variant = "primary", ...props }) => {
 };
 
 const RiskBadge = ({ score }) => {
+  if (score === undefined || score === null || isNaN(score))
+    return (
+      <span className="px-2.5 py-1 text-sm font-semibold rounded-full border bg-gray-100 text-gray-600 border-gray-200">
+        N/A
+      </span>
+    );
+
   const colorMap = {
     high: "bg-red-100 text-red-800 border-red-300",
     medium: "bg-orange-100 text-orange-800 border-orange-300",
@@ -63,17 +70,21 @@ const RiskBadge = ({ score }) => {
       : score > 25
       ? colorMap.low
       : colorMap.safe;
+
+  const displayScore =
+    score > 1 && score <= 100 ? score : (score * 100).toFixed(1);
+
   return (
     <span
       className={`px-2.5 py-1 text-sm font-semibold rounded-full border ${getColor()}`}
     >
-      {score}%
+      {displayScore}%
     </span>
   );
 };
 
 const Recommendation = ({ recommendation, onScheduleScreening }) => {
-  if (!recommendation)
+  if (!recommendation || Object.keys(recommendation).length === 0)
     return (
       <span className="text-xs text-gray-500">
         No specific action required.
@@ -84,18 +95,21 @@ const Recommendation = ({ recommendation, onScheduleScreening }) => {
     CRITICAL: "bg-red-100 text-red-800",
     HIGH: "bg-orange-100 text-orange-800",
     MEDIUM: "bg-yellow-100 text-yellow-800",
-    LOW: "bg-gray-100 text-gray-800",
+    LOW: "bg-green-100 text-green-800",
   };
 
+  const { level = "LOW", action = "General Precaution", message = "" } =
+    recommendation || {};
+
   return (
-    <div className={`p-3 rounded-lg ${colorMap[recommendation.level]}`}>
+    <div className={`p-3 rounded-lg ${colorMap[level] || colorMap.LOW}`}>
       <div className="flex items-start gap-2">
         <AlertTriangle className="h-5 w-5 mt-0.5" />
         <div>
           <p className="font-bold text-sm capitalize">
-            {recommendation.action.replace("_", " ")}
+            {action.replace(/_/g, " ")}
           </p>
-          <p className="text-xs">{recommendation.message}</p>
+          {message && <p className="text-xs mt-1">{message}</p>}
           <Button
             variant="primary"
             className="mt-2 text-xs px-3 py-1"
@@ -114,7 +128,6 @@ const Recommendation = ({ recommendation, onScheduleScreening }) => {
 // ----------------------------
 export default function MdrTracing({ patientData, currentUser }) {
   const abhaId = patientData?.abhaId;
-
   const [mdrStatus, setMdrStatus] = useState(
     patientData?.mdr?.status || "unknown"
   );
@@ -141,18 +154,6 @@ export default function MdrTracing({ patientData, currentUser }) {
     setMessage(msg);
     setTimeout(() => setMessage(""), 3500);
   };
-
-  useEffect(() => {
-    setScreenings(patientData?.screenings || []);
-    setMdrStatus(patientData?.mdr?.status || "unknown");
-    setPathogen(patientData?.mdr?.pathogen || "");
-    setDetectedAt(
-      patientData?.mdr?.detectedAt
-        ? new Date(patientData.mdr.detectedAt).toISOString().slice(0, 16)
-        : ""
-    );
-    setExposures([]);
-  }, [patientData]);
 
   const refreshScreenings = async () => {
     try {
@@ -196,13 +197,23 @@ export default function MdrTracing({ patientData, currentUser }) {
       const res = await axios.get(`${API_URL}/api/mdr/${abhaId}/exposures`, {
         params: { windowDays },
       });
-      const data = res.data?.exposures || [];
-      data.sort((a, b) => b.riskScore - a.riskScore);
-      setExposures(data);
+  
+      const cleaned = (res.data?.exposures || []).map((d) => ({
+        ...d,
+        otherAbhaId: d.abhaId,                   // map abhaId to otherAbhaId
+        overlapHours: d.totalMinutes
+          ? Math.floor(d.totalMinutes / 60)
+          : 0,                                     // calculate overlap in hours
+        riskScore: Number(d.riskScore) || 0,      // ensure riskScore is numeric
+      }));
+  
+      cleaned.sort((a, b) => b.riskScore - a.riskScore);
+      setExposures(cleaned);
+  
       notify(
-        data.length === 0
+        cleaned.length === 0
           ? "No exposures found for selected window."
-          : `Found ${data.length} potential exposures.`
+          : `Found ${cleaned.length} potential exposures.`
       );
     } catch {
       notify("Failed to compute exposures.");
@@ -210,13 +221,14 @@ export default function MdrTracing({ patientData, currentUser }) {
       setIsLoadingExposures(false);
     }
   };
+  
 
   const addScreening = async (otherAbhaId) => {
     try {
-      const res = await axios.post(`${API_URL}/api/mdr/${otherAbhaId}/screening`, {
-        type: "swab",
-        result: "pending",
-      });
+      const res = await axios.post(
+        `${API_URL}/api/mdr/${otherAbhaId}/screening`,
+        { type: "swab", result: "pending" }
+      );
       notify("Screening scheduled (pending).");
       if (otherAbhaId === abhaId) setScreenings(res.data?.screenings || []);
     } catch {
@@ -247,205 +259,183 @@ export default function MdrTracing({ patientData, currentUser }) {
         </motion.div>
       )}
 
+      {/* MDR STATUS CARD */}
       <Card title="MDR Status" icon={CheckCircle}>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Status</label>
+            <label className="text-sm text-gray-600">Status</label>
             <select
-              className="w-full border rounded-md p-2"
+              className="w-full mt-1 border rounded-md px-3 py-2"
               value={mdrStatus}
               onChange={(e) => setMdrStatus(e.target.value)}
             >
-              {["unknown", "suspected", "positive", "negative"].map((opt) => (
-                <option key={opt}>{opt}</option>
-              ))}
+              <option value="unknown">Unknown</option>
+              <option value="positive">Positive</option>
+              <option value="negative">Negative</option>
+              <option value="pending">Pending</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Pathogen</label>
+            <label className="text-sm text-gray-600">Pathogen</label>
             <input
-              className="w-full border rounded-md p-2"
-              placeholder="MRSA / CRE / ESBL"
+              type="text"
+              className="w-full mt-1 border rounded-md px-3 py-2"
               value={pathogen}
               onChange={(e) => setPathogen(e.target.value)}
+              placeholder="e.g. MRSA"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Detected At
-            </label>
+            <label className="text-sm text-gray-600">Detected At</label>
             <input
               type="datetime-local"
-              className="w-full border rounded-md p-2"
+              className="w-full mt-1 border rounded-md px-3 py-2"
               value={detectedAt}
               onChange={(e) => setDetectedAt(e.target.value)}
             />
           </div>
         </div>
         <div className="mt-4">
-          <Button onClick={saveMdr} icon={CheckCircle}>
-            Save MDR Status
-          </Button>
+          <Button onClick={saveMdr}>Save MDR Status</Button>
         </div>
-
-
       </Card>
 
-      <Card title="Log Ward Movement" icon={Activity}>
-        <div className="grid sm:grid-cols-5 gap-4">
-          {["hospitalId", "ward", "bed", "start", "end"].map((f) => (
-            <div key={f}>
-              <label className="block text-sm text-gray-600 mb-1 capitalize">
-                {f}
-              </label>
-              <input
-                type={f.includes("start") || f.includes("end") ? "datetime-local" : "text"}
-                className="w-full border rounded-md p-2"
-                value={move[f]}
-                onChange={(e) => setMove({ ...move, [f]: e.target.value })}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-4">
-          <Button onClick={saveMovement}>
-            Save Movement
-          </Button>
-        </div>
+      {/* MOVEMENT LOGGING */}
+      <Card title="Log Movement" icon={RefreshCcw}>
+  <div className="grid md:grid-cols-4 gap-4">
+    <input
+      placeholder="Ward"
+      value={move.ward}
+      onChange={(e) => setMove({ ...move, ward: e.target.value })}
+      className="border rounded-md px-3 py-2"
+    />
+    <input
+      placeholder="Bed"
+      value={move.bed}
+      onChange={(e) => setMove({ ...move, bed: e.target.value })}
+      className="border rounded-md px-3 py-2"
+    />
+    <input
+      type="datetime-local"
+      value={move.start}
+      onChange={(e) => setMove({ ...move, start: e.target.value })}
+      className="border rounded-md px-3 py-2"
+    />
+    <input
+      type="datetime-local"
+      value={move.end}
+      onChange={(e) => setMove({ ...move, end: e.target.value })}
+      className="border rounded-md px-3 py-2"
+    />
+  </div>
 
-      </Card>
+  <div className="mt-4">
+    <Button onClick={saveMovement}>Save Movement</Button>
+  </div>
+</Card>
 
-      <Card title="Exposure Risk Analysis" icon={Search}>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600">Window (days)</label>
-          <input
-            type="number"
-            min={1}
-            className="w-24 border rounded-md p-2"
-            value={windowDays}
-            onChange={(e) => setWindowDays(parseInt(e.target.value || "7", 10))}
-          />
+
+      {/* EXPOSURE RISK ANALYSIS */}
+<Card title="Exposure Risk Analysis" icon={Search}>
+  <div className="flex items-center gap-3 mb-4">
+    <input
+      type="number"
+      value={windowDays}
+      onChange={(e) => setWindowDays(Number(e.target.value))}
+      className="border rounded-md px-3 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-teal-500"
+    />
+    <span className="text-sm text-gray-700">days window</span>
+    <Button onClick={runExposures} disabled={isLoadingExposures}>
+      {isLoadingExposures ? "Computing..." : "Run Analysis"}
+    </Button>
+  </div>
+
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm border-collapse border border-gray-200">
+      <thead className="bg-teal-100 text-gray-800 uppercase text-xs">
+        <tr>
+          <th className="p-3 text-left">ABHA ID</th>
+          <th className="p-3 text-left">Ward</th>
+          <th className="p-3 text-left">Overlap</th>
+          <th className="p-3 text-left">Risk</th>
+          <th className="p-3 text-left">Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {exposures.length === 0 ? (
+          <tr>
+            <td
+              colSpan={5}
+              className="text-center text-gray-500 py-6 italic"
+            >
+              No exposures yet.
+            </td>
+          </tr>
+        ) : (
+          exposures.map((e, i) => (
+            <tr
+              key={i}
+              className={`border-t hover:bg-teal-50 transition-colors duration-200 ${
+                i % 2 === 0 ? "bg-white" : "bg-gray-50"
+              }`}
+            >
+              <td className="p-3 font-medium text-gray-700">{e.otherAbhaId}</td>
+              <td className="p-3">{e.ward || "-"}</td>
+              <td className="p-3">{e.overlapHours || 0} hrs</td>
+              <td className="p-3">
+                <RiskBadge
+                  score={e.riskScore}
+                  className="text-sm font-bold px-3 py-1 rounded-full"
+                />
+              </td>
+              <td className="p-3">
+                <div className="p-2 border-l-4 rounded-lg shadow-sm bg-white">
+                  <Recommendation
+                    recommendation={e.recommendation}
+                    onScheduleScreening={() => addScreening(e.otherAbhaId)}
+                  />
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</Card>
+
+
+      {/* SCREENING HISTORY */}
+      <Card title="Screening History" icon={CheckCircle}>
+        <div className="flex justify-between mb-3">
+          <Button onClick={refreshScreenings}>Refresh</Button>
           <Button
-            onClick={runExposures}
-            disabled={isLoadingExposures}
-            icon={Search}
-          >
-            {isLoadingExposures ? "Calculating..." : "Run Trace"}
-          </Button>
-        </div>
-
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-600 border-b">
-                <th className="px-3 py-2">Patient Details</th>
-                <th className="px-3 py-2">Risk Analysis</th>
-                <th className="px-3 py-2">Recommended Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoadingExposures ? (
-                <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-gray-500">
-                    Calculating risk scores...
-                  </td>
-                </tr>
-              ) : exposures.length > 0 ? (
-                exposures.map((e) => (
-                  <motion.tr
-                    key={e.abhaId}
-                    className="border-t hover:bg-gray-50 transition"
-                  >
-                    <td className="px-3 py-4">
-                      <p className="font-semibold text-gray-800">
-                        {e.name || "-"}
-                      </p>
-                      <p className="font-mono text-gray-500 text-xs">
-                        {e.abhaId}
-                      </p>
-                    </td>
-                    <td className="px-3 py-4">
-                      <RiskBadge score={e.riskScore} />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {e.totalMinutes} min total exposure
-                      </p>
-                    </td>
-                    <td className="px-3 py-4 w-1/3">
-                      <Recommendation
-                        recommendation={e.recommendation}
-                        onScheduleScreening={() => addScreening(e.abhaId)}
-                      />
-                    </td>
-                  </motion.tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-gray-500">
-                    No exposures computed yet. Run a trace to begin.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      <Card title="Screenings (this patient)" icon={RefreshCcw}>
-        <div className="flex justify-end">
-          <Button
-            icon={RefreshCcw}
             variant="secondary"
-            onClick={refreshScreenings}
+            onClick={() => addScreening(abhaId)}
           >
-            Refresh
+            Add New Screening
           </Button>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-600 border-b">
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {screenings.length > 0 ? (
-                screenings.map((s) => (
-                  <tr key={s._id || s.date} className="border-t hover:bg-gray-50">
-                    <td className="px-3 py-2">
-                      {new Date(s.date).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2">{s.type}</td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                          s.result === "positive"
-                            ? "bg-red-100 text-red-700"
-                            : s.result === "negative"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {s.result}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3} className="px-3 py-4 text-gray-500 text-center">
-                    No screenings yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-gray-500 mt-3">
-          Tip: “Schedule Screening” in the Exposures table creates a pending
-          screening on the exposed patient’s record.
-        </p>
+
+        {screenings.length === 0 ? (
+          <p className="text-gray-500 text-sm italic">
+            No screenings recorded yet.
+          </p>
+        ) : (
+          <ul className="divide-y border rounded-md">
+            {screenings.map((s, i) => (
+              <li key={i} className="p-3 flex justify-between items-center">
+                <span>
+                  <span className="font-medium">{s.type}</span>{" "}
+                  ({s.result})
+                </span>
+                <span className="text-sm text-gray-500">
+                  {new Date(s.date).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   );
