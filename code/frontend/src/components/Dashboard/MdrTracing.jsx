@@ -282,9 +282,13 @@ export default function MdrTracing({ patientData, currentUser }) {
             />
           </div>
         </div>
-        <Button onClick={saveMdr} icon={CheckCircle} className="mt-4">
-          Save MDR Status
-        </Button>
+        <div className="mt-4">
+          <Button onClick={saveMdr} icon={CheckCircle}>
+            Save MDR Status
+          </Button>
+        </div>
+
+
       </Card>
 
       <Card title="Log Ward Movement" icon={Activity}>
@@ -303,9 +307,12 @@ export default function MdrTracing({ patientData, currentUser }) {
             </div>
           ))}
         </div>
-        <Button onClick={saveMovement} className="mt-4">
-          Save Movement
-        </Button>
+        <div className="mt-4">
+          <Button onClick={saveMovement}>
+            Save Movement
+          </Button>
+        </div>
+
       </Card>
 
       <Card title="Exposure Risk Analysis" icon={Search}>
