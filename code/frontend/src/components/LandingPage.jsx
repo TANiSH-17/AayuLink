@@ -1,18 +1,28 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   User, Shield, Building, Hospital as HospitalIcon,
   AlertCircle, CheckCircle, FileText, Clock, AlertTriangle, Zap,
-  Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X
+  Heart, CreditCard, ShieldCheck, BadgeCheck, Building2, Dot, Search, Menu, X,
+  Share2, BrainCircuit, Siren,  Activity, MapPin, Database, Link2, Cloud, HeartPulse, Biohazard, Microscope 
 } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+
+import Globe from 'react-globe.gl';
+import { Link } from "react-router-dom";
+
+import CountUp from 'react-countup';
 import { useLanguage } from "../contexts/LanguageContext.jsx";
 import PatientRegistrationModal from './PatientRegistrationModal.jsx';
+
+// ======================= PARTICLES IMPORTS ========================
+import Particles from "react-tsparticles";
+import { loadFull } from "tsparticles";
+
 
 /* ==========================================================================
    Reusable Field
    ========================================================================== */
-
 function Field({ name, label, type, placeholder, icon: Icon, value, onChange, required = false }) {
-  // ... (This component is correct and remains unchanged)
   return (
     <div>
       <label htmlFor={name} className="text-sm font-semibold text-foreground">{label}</label>
@@ -80,16 +90,13 @@ function HeaderInline({ onValidatorClick }) {
 }
 
 /* ==========================================================================
-   Hero Component
+   Hero Component (MODIFIED)
    ========================================================================== */
 function HeroInline({ onGetStartedClick }) {
   return (
-    <section id="top" className="relative min-h-screen flex justify-center overflow-hidden bg-gradient-to-br from-background via-primary/5 to-accent/5">
-      <div className="absolute inset-0 z-0 opacity-80">
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-primary/15 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
-        <div className="absolute -bottom-10 -right-10 w-[400px] h-[400px] bg-accent/15 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
-      </div>
-      <div className="max-w-7xl mx-auto px-8 pt-24 relative z-10 text-center">
+    // ✅ MODIFIED: Removed old gradient and blob animations to reveal the new particle background.
+    <section id="top" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <div className="max-w-7xl mx-auto px-8 py-24 relative z-10 text-center">
         <div className="animate-slide-up mb-10" style={{ animationDelay: "0.1s" }}>
           <img src="/images/aayulink-logo.png" alt="AayuLink Logo" className="w-4/5 md:w-1/2 mx-auto object-contain drop-shadow-lg" />
         </div>
@@ -115,58 +122,153 @@ function HeroInline({ onGetStartedClick }) {
 /* ==========================================================================
    Interactive "What is AayuLink?" Section
    ========================================================================== */
-function WhatIsAayulinkInline() {
-  const [activeCard, setActiveCard] = useState('aadhaar');
+   
+ function WhatIsAayulinkInline() {
+  const [activeCard, setActiveCard] = useState("aadhaar");
   const aadhaarRef = useRef(null);
   const panRef = useRef(null);
   const abhaRef = useRef(null);
+
   const cardData = {
-    aadhaar: { icon: User, title: "Aadhaar", subtitle: "Your Digital Identity", color: "text-sky-300", imageUrl: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=2940&auto=format&fit=crop' },
-    pan: { icon: CreditCard, title: "PAN", subtitle: "Your Financial Identity", color: "text-blue-300", imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2940&auto=format&fit=crop" },
-    abha: { icon: Heart, title: "ABHA", subtitle: "Your Health Identity", color: "text-emerald-300", imageUrl: "/images/abha.jpg" },
+    aadhaar: {
+      icon: User,
+      title: "Aadhaar",
+      subtitle: "Your Digital Identity",
+      color: "text-sky-300",
+      imageUrl: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=2940&auto=format&fit=crop",
+    },
+    pan: {
+      icon: CreditCard,
+      title: "PAN",
+      subtitle: "Your Financial Identity",
+      color: "text-blue-300",
+      imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2940&auto=format&fit=crop",
+    },
+    abha: {
+      icon: Heart,
+      title: "ABHA",
+      subtitle: "Your Health Identity",
+      color: "text-emerald-300",
+      imageUrl: "/images/abha.jpg",
+    },
   };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => { if (entry.isIntersecting) { setActiveCard(entry.target.id); } });
-      }, { rootMargin: "-40% 0px -40% 0px" }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveCard(entry.target.id);
+          }
+        });
+      },
+      {
+        rootMargin: "-50% 0px -50% 0px",
+        threshold: 0,
+      }
     );
-    const refs = [aadhaarRef, panRef, abhaRef];
-    refs.forEach(ref => { if (ref.current) observer.observe(ref.current); });
-    return () => { refs.forEach(ref => { if (ref.current) observer.unobserve(ref.current); }); };
-  }, []);
 
-  const currentCard = cardData[activeCard];
-  const CardIcon = currentCard.icon;
+    const refs = [aadhaarRef, panRef, abhaRef];
+    refs.forEach(ref => {
+      if (ref.current) {
+        observer.observe(ref.current);
+      }
+    });
+
+    return () => {
+      refs.forEach(ref => {
+        if (ref.current) {
+          observer.unobserve(ref.current);
+        }
+      });
+    };
+  }, []);
+  
+  const ImageCard = ({ cardKey }) => {
+    const card = cardData[cardKey];
+    const CardIcon = card.icon;
+    
+    return (
+      <div
+        key={card.title}
+        className="w-full h-full rounded-3xl p-10 flex flex-col justify-between shadow-xl transition-all duration-700 ease-in-out bg-cover bg-center animate-fade-in"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${card.imageUrl})`,
+        }}
+      >
+        <div>
+          <div className="bg-white/10 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+            <CardIcon className={`w-10 h-10 ${card.color}`} />
+          </div>
+          <h3 className="text-5xl font-bold text-white leading-tight">
+            {card.title}
+          </h3>
+        </div>
+        <p className="text-white/80 text-2xl leading-relaxed">
+          {card.subtitle}
+        </p>
+      </div>
+    );
+  };
 
   return (
-    <section id="features" className="py-24 bg-background-gradient">
+    // ✅ CORRECTION: Removed 'py-24' from this line
+    <section id="features" className="bg-background-gradient">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
-          <div className="lg:sticky top-24 h-[500px]">
-            <div key={activeCard} className="w-full h-full rounded-3xl p-10 flex flex-col justify-between shadow-xl transition-all duration-700 ease-in-out bg-cover bg-center animate-fade-in" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url(${currentCard.imageUrl})` }}>
-              <div>
-                <div className="bg-white/10 w-20 h-20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm"><CardIcon className={`w-10 h-10 ${currentCard.color}`} /></div>
-                <h3 className="text-5xl font-bold text-white leading-tight">{currentCard.title}</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+          
+          <div className="hidden lg:block lg:sticky top-0 h-screen">
+            <div className="flex items-center h-full">
+              <div className="w-full h-[500px]">
+                <ImageCard cardKey={activeCard} />
               </div>
-              <p className="text-white/80 text-2xl leading-relaxed">{currentCard.subtitle}</p>
             </div>
           </div>
-          <div className="space-y-[60vh] py-20">
-            <div ref={aadhaarRef} id="aadhaar" className="space-y-4">
-              <h2 className="text-5xl font-bold text-foreground leading-tight">We have an Aadhaar card for our <span className="text-primary">identification.</span></h2>
-              <p className="text-xl text-muted-foreground">It's the foundational identity for every citizen, unlocking services and benefits nationwide.</p>
+
+          <div className="flex flex-col">
+            <div ref={aadhaarRef} id="aadhaar" className="min-h-[80vh] flex flex-col justify-center space-y-4">
+              <div className="lg:hidden w-full h-[400px] mb-8">
+                 <ImageCard cardKey="aadhaar" />
+              </div>
+              <h2 className="text-5xl font-bold text-foreground leading-tight">
+                We have an Aadhaar card for our{" "}
+                <span className="text-primary">identification.</span>
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                It's the foundational identity for every citizen, unlocking services and benefits nationwide.
+              </p>
             </div>
-            <div ref={panRef} id="pan" className="space-y-4">
-              <h2 className="text-5xl font-bold text-foreground leading-tight">A PAN card for our <span className="text-accent">finances.</span></h2>
-              <p className="text-xl text-muted-foreground">The key to our financial lives, from taxes to investments, unified under one digital roof.</p>
+
+            <div ref={panRef} id="pan" className="min-h-[80vh] flex flex-col justify-center space-y-4">
+              <div className="lg:hidden w-full h-[400px] mb-8">
+                 <ImageCard cardKey="pan" />
+              </div>
+              <h2 className="text-5xl font-bold text-foreground leading-tight">
+                A PAN card for our <span className="text-accent">finances.</span>
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                The key to our financial lives, from taxes to investments, unified under one digital roof.
+              </p>
             </div>
-            <div ref={abhaRef} id="abha" className="space-y-4">
-              <h2 className="text-5xl font-bold text-foreground leading-tight">But for our health?</h2>
+            
+            <div ref={abhaRef} id="abha" className="space-y-4 pt-[30vh] pb-[50vh]">
+              <div className="lg:hidden w-full h-[400px] mb-8">
+                 <ImageCard cardKey="abha" />
+              </div>
+              <h2 className="text-5xl font-bold text-foreground leading-tight">
+                But for our health?
+              </h2>
               <div className="text-xl text-muted-foreground space-y-4 pt-4">
-                <p>The missing piece is here. Introducing the <b className="text-foreground">Aadhaar of your Health</b>.</p>
-                <p><span className="bg-hero-gradient bg-clip-text text-transparent font-bold">AayuLink</span> provides your ABHA ID—a secure, unified health account linking your entire medical history, with your consent.</p>
+                <p>
+                  The missing piece is here. Introducing the{" "}
+                  <b className="text-foreground">Aadhaar of your Health</b>.
+                </p>
+                <p>
+                  <span className="bg-hero-gradient bg-clip-text text-transparent font-bold">
+                    AayuLink
+                  </span>{" "}
+                  provides your ABHA ID — a secure, unified health account linking your entire medical history, with your consent.
+                </p>
               </div>
             </div>
           </div>
@@ -176,14 +278,13 @@ function WhatIsAayulinkInline() {
   );
 }
 
-/* ==========================================================================
-   Healthcare Challenge
-   ========================================================================== */
 function HealthcareChallengeInline() {
   const problems = [{ icon: FileText, title: "Scattered Medical Records", description: "Your health data is fragmented across multiple hospitals." },{ icon: Clock, title: "Time-Consuming Process", description: "Emergency situations are delayed by lengthy processes to gather medical history." },{ icon: AlertTriangle, title: "Critical Information Loss", description: "Important allergies and previous treatments are often missed, leading to risks." },];
   const solutions = [{ icon: User, title: "Unified Patient Profile", description: "One comprehensive profile with your complete medical history, instantly accessible." },{ icon: Zap, title: "Instant Emergency Access", description: "Doctors can access critical health information immediately with proper consent." },{ icon: Heart, title: "Complete Care Continuity", description: "Every consultation and treatment is automatically updated across your network." },];
+  
   return (
-    <section className="py-24 bg-muted/20 relative overflow-hidden">
+    // ✅ CORRECTION: Removed 'py-24' and added a smaller 'pt-24' for some breathing room
+    <section className="pt-24 bg-muted/20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold mb-6">The Healthcare Challenge We&apos;re <span className="bg-hero-gradient bg-clip-text text-transparent">Solving</span></h2>
@@ -204,52 +305,7 @@ function HealthcareChallengeInline() {
   );
 }
 
-/* ==========================================================================
-   Why Choose AyuLink
-   ========================================================================== */
-function WhyChooseAayulinkInline() {
-  const stats = [ { icon: Heart, number: "500+", label: "Connected Hospitals", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, number: "99.9%", label: "Uptime Guarantee", color: "text-green-600", bg: "bg-green-50" }, { icon: Shield, number: "10M+", label: "Records Secured", color: "text-purple-600", bg: "bg-purple-50" }, { icon: Clock, number: "<3s", label: "Average Access Time", color: "text-orange-600", bg: "bg-orange-50" },];
-  const features = [ { icon: Shield, title: "Bank-Level Security", description: "Military-grade encryption with HIPAA compliance for complete data protection.", color: "text-blue-600", bg: "bg-blue-50" }, { icon: Zap, title: "Lightning Fast", description: "Access complete medical history in under 3 seconds during emergencies.", color: "text-yellow-600", bg: "bg-yellow-50" }, { icon: User, title: "Always Available", description: "24/7 mobile access with biometric authentication and offline capabilities.", color: "text-green-600", bg: "bg-green-50" },];
-  
-  return (
-    <section className="py-24 bg-background-gradient">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-5xl md:text-6xl font-bold mb-8">Healthcare Made <span className="text-primary">Simple</span> & <span className="text-green-600">Secure</span></h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Join millions who trust AayuLink to keep their health data safe, accessible, and under their complete control.</p>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
-          {stats.map((s, i) => {
-            const IconComp = s.icon;
-            return (
-              <div key={i} className="bg-card p-8 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <div className={`${s.bg} w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4`}><IconComp className={`w-8 h-8 ${s.color}`} /></div>
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{s.number}</div>
-                <div className="text-sm font-medium text-muted-foreground">{s.label}</div>
-              </div>
-            );
-          })}
-        </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {features.map((f, i) => {
-            const IconComp = f.icon;
-            return (
-              <div key={i} className="bg-card p-10 text-center rounded-2xl shadow-lg hover:shadow-dark-hover hover:scale-110 hover:-translate-y-2 transition-all duration-500 ease-in-out group animate-slide-up" style={{ animationDelay: `${i * 0.2 + 0.4}s` }}>
-                <div className={`${f.bg} w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <IconComp className={`w-10 h-10 ${f.color}`} />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-foreground group-hover:text-primary transition-colors duration-300">{f.title}</h3>
-                <p className="text-muted-foreground leading-relaxed text-lg">{f.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ==========================================================================
    Improved Network Section
@@ -261,7 +317,7 @@ function NetworkSectionInline() {
   const filteredHospitals = useMemo(() => {
     if (selectedCity === 'All') { return mockHospitals; }
     return mockHospitals.filter(h => h.city === selectedCity);
-  }, [selectedCity]);
+  }, [selectedCity, mockHospitals]);
 
   const HospitalCard = ({ hospital, index }) => (
     <div className="bg-card hover:bg-muted/50 border border-border p-4 rounded-xl flex items-center gap-4 transition-all duration-200 animate-slide-up" style={{ animationDelay: `${index * 50}ms`, animationDuration: '300ms' }}>
@@ -325,41 +381,176 @@ function NetworkSectionInline() {
   );
 }
 
-/* ==========================================================================
-   New "About" Section
-   ========================================================================== */
-function AboutSection() {
-  return (
-    <section id="about" className="py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">About AayuLink</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">We're on a mission to revolutionize healthcare in India by creating a unified, secure, and patient-controlled health data ecosystem.</p>
-        </div>
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div className="space-y-6 animate-slide-up">
-            <h3 className="text-3xl font-bold text-foreground">Our Vision</h3>
-            <p className="text-lg text-muted-foreground leading-relaxed">Our vision is to empower every Indian with complete control over their health data through accessible and secure records. We believe this is fundamental to enabling seamless, high-quality healthcare across the nation.</p>
-            <p className="text-lg text-muted-foreground leading-relaxed">Aligned with the Ayushman Bharat Digital Mission (ABDM), we are collaborating with hospitals and technology providers to build a truly unified digital health platform for India.</p>
-            <div className="flex flex-col sm:flex-row gap-8 pt-6">
-              <div className="flex items-center gap-4"><div className="bg-primary/10 p-4 rounded-xl"><ShieldCheck className="w-8 h-8 text-primary" /></div><div><h4 className="font-semibold text-foreground text-lg">ISO 27001 Certified</h4><p className="text-sm text-muted-foreground">Security Standards</p></div></div>
-              <div className="flex items-center gap-4"><div className="bg-green-100 p-4 rounded-xl"><BadgeCheck className="w-8 h-8 text-green-600" /></div><div><h4 className="font-semibold text-foreground text-lg">ABDM Compliant</h4><p className="text-sm text-muted-foreground">Government Approved</p></div></div>
+  
+  function AboutAndMDRSection() {
+    const mdrStats = [
+      {
+        icon: Microscope,
+        title: "AI-Driven MDR Detection",
+        desc: "AayuLink continuously analyzes hospital microbiology data to identify multi-drug-resistant patterns early.",
+        color: "from-rose-500 to-pink-400",
+      },
+      {
+        icon: Biohazard,
+        title: "Real-Time Genomic Insights",
+        desc: "Genomic and phenotypic resistance data converge for rapid identification of high-risk pathogen clusters.",
+        color: "from-red-500 to-orange-400",
+      },
+      {
+        icon: Activity,
+        title: "Predictive Epidemiology",
+        desc: "Machine-learning models forecast outbreak hotspots, enabling proactive infection control.",
+        color: "from-blue-500 to-sky-400",
+      },
+      {
+        icon: Database,
+        title: "Unified Data Network",
+        desc: "AayuLink synchronizes hospital, pharmacy, and lab intelligence into a secure national health backbone.",
+        color: "from-emerald-500 to-teal-400",
+      },
+    ];
+  
+    return (
+      <section id="about" className="relative overflow-hidden py-28 bg-gradient-to-br from-background via-background to-muted/50">
+        {/* Floating glow orbs */}
+        <div className="absolute -top-40 left-20 w-72 h-72 bg-primary/20 blur-3xl rounded-full animate-pulse-slow"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/10 blur-3xl rounded-full animate-pulse-slow"></div>
+  
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          {/* About AayuLink Section */}
+          <motion.div
+            className="text-center mb-24"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-5 py-2 mb-6 bg-primary/10 border border-primary/30 rounded-full text-primary text-sm font-medium">
+              <HeartPulse className="w-4 h-4" /> About AayuLink
             </div>
+            <h2 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
+              Redefining India’s Digital Health Infrastructure
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              AayuLink is building the unified health identity layer for every citizen — connecting hospitals, labs, and
+              patients into a secure ecosystem where data empowers care.
+            </p>
+          </motion.div>
+  
+          <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+            {/* Left: Text */}
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h3 className="text-3xl font-bold text-foreground">Our Vision</h3>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                AayuLink aims to empower every individual with complete control over their health records. By aligning with
+                India’s Ayushman Bharat Digital Mission, we’re creating a unified framework for healthcare continuity.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-8 pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-4 rounded-xl backdrop-blur-sm">
+                    <ShieldCheck className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground text-lg">ISO 27001 Certified</h4>
+                    <p className="text-sm text-muted-foreground">Enterprise-grade Security Standards</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="bg-green-100/10 p-4 rounded-xl backdrop-blur-sm">
+                    <BadgeCheck className="w-8 h-8 text-green-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground text-lg">ABDM Compliant</h4>
+                    <p className="text-sm text-muted-foreground">National Digital Health Stack</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+  
+            {/* Right: Floating Image */}
+            <motion.div
+              className="relative rounded-3xl overflow-hidden shadow-2xl w-[85%] mx-auto"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <img
+                src="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=1600&auto=format&fit=crop"
+                alt="Doctor using digital health dashboard"
+                className="rounded-3xl object-cover w-full h-[400px]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent"></div>
+            </motion.div>
           </div>
-          <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <img src="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=2832&auto=format&fit=crop" alt="Doctor showing patient data on a tablet" className="rounded-2xl shadow-xl w-full h-full object-cover" />
+  
+          {/* MDR Insights Section */}
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-5 py-2 mb-6 bg-rose-500/10 border border-rose-500/30 rounded-full text-rose-500 text-sm font-medium">
+              <Biohazard className="w-4 h-4" /> MDR Surveillance
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Combatting Multi-Drug-Resistant Pathogens with Intelligence
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              AayuLink integrates pathogen genomics, hospital microbiology, and AI analytics to track and predict emerging
+              resistance — making every hospital a sentinel node in India’s fight against MDR.
+            </p>
+          </motion.div>
+  
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
+            {mdrStats.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="group relative p-[1px] rounded-2xl bg-gradient-to-r from-transparent via-border to-transparent hover:via-primary/40"
+                >
+                  <div className="relative bg-background/60 backdrop-blur-xl p-6 rounded-2xl h-full transition-all duration-500 group-hover:bg-background/80">
+                    <div className={`w-12 h-12 rounded-xl mb-5 bg-gradient-to-r ${s.color} flex items-center justify-center shadow-md`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
+  
+          {/* Closing Callout */}
+          <motion.div
+            className="mt-24 text-center bg-gradient-to-r from-rose-500/10 via-primary/10 to-transparent border border-primary/20 rounded-3xl p-10 max-w-4xl mx-auto backdrop-blur-md shadow-lg"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h4 className="text-2xl font-semibold mb-3 text-foreground">AayuLink: Data That Heals, Insights That Protect</h4>
+            <p className="text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+              By merging digital health identities with pathogen intelligence, AayuLink bridges the gap between healthcare
+              delivery and global biosurveillance — redefining how nations respond to invisible threats.
+            </p>
+          </motion.div>
         </div>
-      </div>
-    </section>
-  );
-}
-/* ==========================================================================
-   Redesigned Centered Auth Panel - CORRECTED
-   ========================================================================== */
-   // This component should be inside your LandingPage.jsx file
+      </section>
+    );
+  }
 
-   function AuthPanelInline({ onLogin, onSignUp, authError }) {
+/* ==========================================================================
+   Redesigned Centered Auth Panel
+   ========================================================================== */
+function AuthPanelInline({ onLogin, onSignUp, authError }) {
     const { t } = useLanguage(); 
     const [role, setRole] = useState("individual");
     const [mode, setMode] = useState("login");
@@ -416,7 +607,6 @@ function AboutSection() {
           </h2>
           <p className="text-gray-500 leading-relaxed max-w-prose mx-auto mb-10">{t.tagline}</p>
           <div className="bg-white p-6 rounded-2xl shadow-lg border text-left">
-            {/* ✅ This section has been updated */}
             <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
               <button 
                 onClick={() => { setRole("individual"); cleanUpState(); }} 
@@ -458,32 +648,131 @@ function AboutSection() {
       </section>
     );
 }
+
 /* ==========================================================================
-   Final Page Export
+   Final Page Export (MODIFIED)
    ========================================================================== */
-   export default function LandingPage(props) {
-    // ✅ No more modal state or props needed here
-    const { onLogin, onSignUp, authError, onValidatorClick } = props;
+export default function LandingPage(props) {
+  const { onLogin, onSignUp, authError, onValidatorClick } = props;
+
+  const particlesInit = useCallback(async (engine) => {
+    await loadFull(engine);
+  }, []);
   
-    return (
-      <div className="bg-background text-foreground">
+  const particleOptions = useMemo(() => ({
+    fullScreen: {
+      enable: false
+    },
+    particles: {
+      number: {
+        value: 50,
+        density: {
+          enable: true,
+          value_area: 800,
+        },
+      },
+      color: {
+        value: ["#3b82f6", "#10b981", "#8b5cf6"], // Your theme colors
+      },
+      shape: {
+        type: "circle",
+      },
+      opacity: {
+        value: 0.6,
+        random: true,
+        anim: {
+          enable: true,
+          speed: 1,
+          opacity_min: 0.1,
+          sync: false,
+        },
+      },
+      size: {
+        value: 5,
+        random: true,
+        anim: {
+          enable: true,
+          speed: 2,
+          size_min: 1,
+          sync: false,
+        },
+      },
+      move: {
+        enable: true,
+        speed: 0.8,
+        direction: "none",
+        random: true,
+        straight: false,
+        out_mode: "out",
+        bounce: false,
+      },
+    },
+    interactivity: {
+      detect_on: "canvas",
+      events: {
+        onhover: {
+          enable: true,
+          mode: "grab",
+        },
+        onclick: {
+          enable: true,
+          mode: "push",
+        },
+        resize: true,
+      },
+      modes: {
+        grab: {
+          distance: 140,
+          line_opacity: 0.5,
+        },
+        push: {
+          particles_nb: 4,
+        },
+      },
+    },
+    retina_detect: true,
+    background: {
+      color: "transparent",
+    }
+  }), []);
+
+  return (
+    <div className="bg-background text-foreground relative">
+      
+      <Particles
+        id="tsparticles"
+        init={particlesInit}
+        options={particleOptions}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+        }}
+      />
+      
+      <div className="relative z-10">
         <HeaderInline onValidatorClick={onValidatorClick} />
         <main>
-          {/* ✅ The "Get Started" button now just scrolls to the auth section */}
           <HeroInline onGetStartedClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })} />
-          
+
           <WhatIsAayulinkInline />
+          
+          <AboutAndMDRSection />
+
           <HealthcareChallengeInline />
-          <WhyChooseAayulinkInline />
+          
           <NetworkSectionInline />
-          <AboutSection />
+         
           <AuthPanelInline 
             onLogin={onLogin} 
             onSignUp={onSignUp} 
             authError={authError} 
           />
         </main>
-        {/* ✅ The PatientRegistrationModal is no longer rendered here */}
       </div>
-    );
-  }
+    </div>
+  );
+}
