@@ -22,7 +22,7 @@ This README provides an overview of our project for the Smart India Hackathon, i
 ## 🔗 Project Links
 
 - **SIH Presentation:** [View Presentation](https://github.com/TANiSH-17/SIH-2025/blob/main/files/Internal_PPT_SIxH_Pointers.pdf)
-- **Video Demonstration:** [Watch Video](https://www.youtube.com/watch?si=J_uVx2xFB4-FO1P3&v=SNPGQtNuHjo&feature=youtu.be)
+- **Video Demonstration:** [Watch Video]((https://youtu.be/Jhk9VMpVu0Y))
 - **Live Deployment:** [View Deployment](https://sih-2025-aayulink.vercel.app/)
 - **Source Code:** [GitHub Repository](https://github.com/TANiSH-17/SIH-2025)
 - **Additional Resources:** [Other Relevant Links](ANY OTHER RELEVANT LINKS)
