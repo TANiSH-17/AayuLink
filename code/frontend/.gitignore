@@ -13,6 +13,7 @@
 # Environment Variables
 # Keep sensitive local environment variables out of version control.
 .env.local
+.env.production
 .env.*.local
 
 # Logs
