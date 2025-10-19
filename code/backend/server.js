@@ -1,32 +1,53 @@
-// backend/server.js  — APP ENTRY (do NOT put route handlers here)
+// backend/server.js — APP ENTRY
+
+// --- Core Node.js Modules ---
 const path = require('path');
+const fs = require('fs'); // Moved from debug probe to top level
+
+// --- Third-party Modules ---
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
+const morgan = require('morgan'); // A professional-grade request logger
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-// --- Import ALL Route Files ---
-const apiRoutes = require('./routes/api');              
+// --- Application Modules ---
+const { runPredictionModel } = require('./services/predictionService');
+const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const translatorRoutes = require('./routes/translator');
 const prescriptionRoutes = require('./routes/prescription');
 const otpRoutes = require('./routes/otp');
 const predictionRoutes = require('./routes/predictions');
 const patientRoutes = require('./routes/patient');
-const mdrRoutes = require('./routes/mdr'); 
-const { runPredictionModel } = require('./services/predictionService');
+const mdrRoutes = require('./routes/mdr');
 
+// --- Initialization ---
 const app = express();
 
-// CORS
+// --- Environment Variable Setup ---
+const PORT = process.env.PORT || 8000;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const ALLOWED_ORIGINS_STR = process.env.ALLOWED_ORIGINS || 'http://localhost:5173';
+
+if (!MONGO_URI) {
+  console.error('---!! FATAL ERROR !!--- No MONGO_URI/MONGODB_URI found in environment variables.');
+  process.exit(1); // Fail fast if DB connection string is missing
+}
+
+// --- Middleware Configuration ---
+
+// 1. CORS (Cross-Origin Resource Sharing)
+const allowedOrigins = ALLOWED_ORIGINS_STR.split(',').map(origin => origin.trim());
 const corsOptions = {
-  origin: [
-    'https://sih-2025-pi-seven.vercel.app',
-    'https://sih-2025-aayulink.vercel.app', 
-    'https://sih-2025-bpa576elr-tanish-17s-projects.vercel.app',
-    'https://sih-2025-aegr978t0-tanish-17s-projects.vercel.app',
-    'http://localhost:5173'
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   allowedHeaders: ['authorization', 'content-type'],
@@ -34,21 +55,18 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Body parser
+// 2. Request Body Parser
 app.use(express.json());
 
-// Simple request logger
-app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
+// 3. HTTP Request Logger
+// Use 'dev' format for development for colored status codes, and 'combined' for production
+app.use(morgan(NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-// Serve uploaded files statically
+// 4. Static File Server for Uploads
 const uploadsDir = path.join(__dirname, 'uploads');
-console.log('Serving uploads from:', uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
 
-// Mount routes
+// --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/translate', translatorRoutes);
@@ -56,24 +74,37 @@ app.use('/api/prescription', prescriptionRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/predictions', predictionRoutes);
 app.use('/api/mdr', mdrRoutes);
-app.use('/api', apiRoutes);
+app.use('/api', apiRoutes); // General/other API routes
 
-// Health check
+// --- Health Check & Debugging Routes ---
+
+// Health check endpoint for uptime monitoring
 app.get('/', (_req, res) => {
   res.status(200).send('AayuLink Backend is running!');
 });
 
-const PORT = process.env.PORT || 8000;
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
-
-if (!MONGO_URI) {
-  console.error('---!! FATAL ERROR !!--- No MONGO_URI/MONGODB_URI found in environment variables.');
-  process.exit(1);
+// Conditional debugging probe for development environment only
+if (NODE_ENV === 'development') {
+  app.get('/__uploads_probe/:name', (req, res) => {
+    const p = path.join(uploadsDir, req.params.name);
+    res.json({ path: p, exists: fs.existsSync(p) });
+  });
 }
 
-// Connection now handled on-demand by dbConnect helper in routes
+// --- Global Error Handler ---
+// Catches errors from async routes
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+
+
+// --- Server Startup ---
 app.listen(PORT, () => {
-  console.log(`Server is listening on http://localhost:${PORT}`);
+  console.log(`Server is listening on port ${PORT} in ${NODE_ENV} mode.`);
+  console.log('Serving uploads from:', uploadsDir);
+  console.log('Allowed CORS origins:', allowedOrigins);
+
   try {
     // Start the recurring public health prediction model
     runPredictionModel();
@@ -81,13 +112,6 @@ app.listen(PORT, () => {
   } catch (e) {
     console.error('Prediction service failed to start:', e);
   }
-});
-
-// Debugging probe
-app.get('/__uploads_probe/:name', (req, res) => {
-  const fs = require('fs');
-  const p = path.join(__dirname, 'uploads', req.params.name);
-  res.json({ path: p, exists: fs.existsSync(p) });
 });
 
 module.exports = app;
